@@ -1,5 +1,5 @@
 .idea
 .vscode
-# log/*
+log/*
 .ipynb_checkpoints
 prototype/db.json
