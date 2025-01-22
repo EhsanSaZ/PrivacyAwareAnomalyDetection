@@ -37,9 +37,10 @@ from flwr.common import Metrics, Context
 # from sklearn.metrics import f1_score
 
 # from imblearn.over_sampling import RandomOverSampler
-from config import args
+from experiment_config import args, set_global_seed
 from model import MLPClassifier_torch
 from task import train, test, load_datasets
+
 
 def set_parameters(net, parameters: List[np.ndarray]):
     params_dict = zip(net.state_dict().keys(), parameters)
@@ -59,30 +60,47 @@ class FlowerClient(NumPyClient):
         self.args = args
         
 
-    def get_parameters(self, config):
-        return get_parameters(self.net)
+    # def get_parameters(self, config):
+    #     return get_parameters(self.net)
+    def get_parameters(self, config) -> List[np.ndarray]:
+        # Return model parameters as a list of NumPy ndarrays
+        # Exclude parameters of BN layers when using FedBN
+        return [
+            val.cpu().numpy()
+            for name, val in self.net.state_dict().items()
+            if "bn" not in name
+        ]
+
+    def set_parameters(self, parameters: List[np.ndarray]) -> None:
+        # Set model parameters from a list of NumPy ndarrays
+        keys = [k for k in self.net.state_dict().keys() if "bn" not in k]
+        params_dict = zip(keys, parameters)
+        state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
+        self.net.load_state_dict(state_dict, strict=False)
 
     def fit(self, parameters, config):
-        print(f"Client {self.p_id} starting fit")
-        set_parameters(self.net, parameters)
-        _, train_loss = train(self.net, self.trainloader, epochs=self.args.epoch_iterations, device=self.args.device, 
-                              verbose=False ,local_lr=self.args.local_lr)
-        loss, accuracy, f1_score = test(self.net, self.trainloader, device=self.args.device) 
-        return get_parameters(self.net), len(self.trainloader), {"loss": loss, "accuracy":  float(accuracy), "f1_score": f1_score, "train_local_loss": train_loss}
+        # print(f"Client {self.p_id} starting fit with learning rate {config['lr']}")
+        # self.set_parameters(self.net, parameters)
+        self.set_parameters(parameters)
+        _, train_loss = train(self.net, self.trainloader, epochs=args.epoch_iterations, device=args.device, verbose=False ,local_lr=config['lr'])
+        loss, accuracy, f1_score = test(self.net, self.trainloader, device=args.device) 
+        # return self.get_parameters(self.net), len(self.trainloader), {"loss": loss, "accuracy":  float(accuracy), "f1_score": f1_score, "train_local_loss": train_loss}
+        return self.get_parameters(config), len(self.trainloader), {"loss": loss, "accuracy":  float(accuracy), "f1_score": f1_score, "train_local_loss": train_loss}
 
 
     def evaluate(self, parameters, config):
-        set_parameters(self.net, parameters)
-        loss, accuracy, f1_score = test(self.net, self.valloader, device=self.args.device)
+        # self.set_parameters(self.net, parameters)
+        self.set_parameters(parameters)
+        loss, accuracy, f1_score = test(self.net, self.valloader, args.device)
         return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score)}
+        # return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score)}
     
 def create_client(args) -> ClientApp:
-
+    
     def client_fn(context: Context) -> Client:
         """Create a Flower client representing a single organization."""
-
         # Load model
-        net = MLPClassifier_torch(input_size=args.input_size, output_size=args.output_size, hidden_layer_sizes=(200,)).to(args.device)
+        net = MLPClassifier_torch(input_size=args.input_size, output_size=args.output_size, hidden_layer_sizes=(250,)).to(args.device)
 
         # Load data (CIFAR-10)
         # Note: each client gets a different trainloader/valloader, so each client

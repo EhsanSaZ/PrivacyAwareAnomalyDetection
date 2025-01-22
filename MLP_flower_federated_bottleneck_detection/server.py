@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from typing import List, Tuple, Optional, Union
-import copy, os
+import json, copy
 
 # import matplotlib.pyplot as plt
 # import numpy as np
@@ -28,17 +28,7 @@ from flwr.common import (
     Scalar,
 )
 
-
-# import argparse
-# import pandas as pd
-# from sklearn.calibration import LabelEncoder
-# from sklearn.discriminant_analysis import StandardScaler
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import f1_score
-
-# from imblearn.over_sampling import RandomOverSampler
-
-from config import args
+from experiment_config import args, set_global_seed
 from model import MLPClassifier_torch
 from task import test, set_log_path
 
@@ -49,14 +39,20 @@ def get_evaluate_fn(testloader):
     def evaluate_fn(server_round: int, parameters, config):
         """Evaluate global model on the whole test set."""
 
-        model = MLPClassifier_torch(input_size=args.input_size, output_size=args.output_size, hidden_layer_sizes=(200,)).to(args.device)
+        model = MLPClassifier_torch(input_size=args.input_size, output_size=args.output_size, hidden_layer_sizes=(250,)).to(args.device)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
-        # set parameters to the model
-        params_dict = zip(model.state_dict().keys(), parameters)
-        state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        model.load_state_dict(state_dict, strict=True)
+        # # set parameters to the model
+        # params_dict = zip(model.state_dict().keys(), parameters)
+        # state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+        # model.load_state_dict(state_dict, strict=True)
+
+        # Set model parameters from a list of NumPy ndarrays
+        keys = [k for k in model.state_dict().keys() if "bn" not in k]
+        params_dict = zip(keys, parameters)
+        state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
+        model.load_state_dict(state_dict, strict=False)
 
         # call test (evaluate model as in centralised setting)
         loss, accuracy, f1_score = test(model, testloader, args.device)
@@ -71,10 +67,11 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
+    f1_scores = [num_examples * m["f1_score"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
 
     # Aggregate and return custom metric (weighted average)
-    return {"accuracy": sum(accuracies) / sum(examples)}
+    return {"accuracy": sum(accuracies) / sum(examples), "f1_score": sum(f1_scores) / sum(examples)}
 
 def fit_metrics_aggregation_fn(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # print("\nPrinting metrics in fit_metrics_aggregation_fn function \n {} \n".format(metrics))
@@ -92,16 +89,26 @@ def fit_metrics_aggregation_fn(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 class FedAvgCustom(FedAvg):
     def __init__(self, meta_args, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+        set_global_seed(meta_args.seed)
+        self.lr = meta_args.local_lr
+        self.min_local_lr = meta_args.min_local_lr
+        self.decay_weight = meta_args.decay_weight
+        self.on_fit_config_fn = self.custom_on_fit_config_fn
         # Run simulation
         print("{:<50}".format("-" * 15 + " log path " + "-" * 50)[0:60])
         log_path = set_log_path(meta_args)
         print(log_path)
         self.writer = SummaryWriter(log_path)
-    
+        args_dict = vars(copy.deepcopy(meta_args))
+        del args_dict["device"]
+        json_string = json.dumps(args_dict, indent=4).replace("\n", "<br>").replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;")
+        self.writer.add_text("Experiment Details", json_string)
+
     def aggregate_fit(self, server_round: int, results: list[tuple[ClientProxy, FitRes]], failures: list[Union[tuple[ClientProxy, FitRes], BaseException]],):
         parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
         # print(f"Round {server_round} - Aggregated fit: {metrics_aggregated}")
+        self.writer.add_scalar("train_accuracy", metrics_aggregated["accuracy"], server_round)
+        self.writer.add_scalar("train_f1_score", metrics_aggregated["f1_score"], server_round)  
         self.writer.add_scalar("train_loss", metrics_aggregated["train_loss"], server_round)
         return parameters_aggregated, metrics_aggregated
 
@@ -111,6 +118,12 @@ class FedAvgCustom(FedAvg):
         self.writer.add_scalar("test_accuracy", metrics["accuracy"], server_round)
         self.writer.add_scalar("test_loss", loss, server_round)
         self.writer.add_scalar("test_f1_score", metrics["f1_score"], server_round)
+
+    def custom_on_fit_config_fn(self, server_round: int) ->dict[str, Scalar]:
+        """Return a configuration for the next round of training."""
+        self.lr = self.lr * self.decay_weight if self.decay_weight < 1.0 and self.lr > self.min_local_lr else self.min_local_lr
+        print(f"Round {server_round} - Learning rate: {self.lr}")
+        return {"lr": self.lr}
 
 
 def create_server(global_test_loader, args, num_rounds=2):

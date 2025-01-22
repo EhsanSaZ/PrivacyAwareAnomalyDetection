@@ -14,6 +14,7 @@ class MLPClassifier_torch(nn.Module):
         prev_size = input_size
         for size in hidden_layer_sizes:
             layers.append(nn.Linear(prev_size, size))
+            # layers.append(nn.BatchNorm1d(size))  # Add batch normalization
             layers.append(nn.ReLU())
             prev_size = size
         layers.append(nn.Linear(prev_size, output_size))

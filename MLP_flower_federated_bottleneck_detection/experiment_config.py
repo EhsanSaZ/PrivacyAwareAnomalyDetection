@@ -21,12 +21,62 @@ meta_args.device = torch.device('cuda:{}'.format(meta_args.gpu) if torch.cuda.is
 meta_args.log_path = "fed_avg_flower"
 meta_args.model = "mlp"
 
-meta_args.round = 50  # 50
+meta_args.round = 70  # 50
 meta_args.epoch_iterations = 20
-meta_args.local_lr = 0.001
 meta_args.batch_size = 150
-meta_args.decay_weight = 1.0
+
+# meta_args.local_lr = 0.001  ~82 max accuracy
+# meta_args.decay_weight = 1.0
+# meta_args.epoch_iterations = 20
+
+# meta_args.local_lr = 0.003 
+# meta_args.decay_weight = 0.85
+# meta_args.epoch_iterations = 20
+
+# meta_args.local_lr = 0.003 # with min lr 0.001
+# meta_args.min_local_lr = 0.001
+# meta_args.decay_weight = 0.85
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 20
+
+# meta_args.local_lr = 0.003 # with min lr 0.001
+# meta_args.min_local_lr = 0.0001 
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 20
+
+
+# meta_args.local_lr = 0.003 # with simple adam no betas  gets 81% at round 40 and gets ~89% but train loss also start increasing ar round 38
+# meta_args.min_local_lr = 1e-08
+# meta_args.decay_weight = 0.85
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 20
+
+# meta_args.local_lr = 0.003 # with simple adam no betas 
+# meta_args.min_local_lr = 0.001
+# meta_args.decay_weight = 0.85
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 20
+
+# meta_args.local_lr = 0.003 # with simple adam no betas 
+# meta_args.min_local_lr = 0.0001
+# meta_args.decay_weight = 0.85
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 20
+
+meta_args.local_lr = 0.003 # with simple adam no betas 
+meta_args.min_local_lr = 1e-05
+meta_args.decay_weight = 0.85
 meta_args.data_type = ""
+meta_args.epoch_iterations = 20
+
+
+# meta_args.local_lr = 0.004 # with simple adam no betas 
+# meta_args.min_local_lr = 1e-08
+# meta_args.decay_weight = 0.85
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 20
+
+
 
 meta_args.remove_labels = [17, 21, 25, 29]
 meta_args.features = ['sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in', 'sender_tcp_snd_buffer_max',
@@ -49,3 +99,20 @@ meta_args.filenames = {
 meta_args.input_size = len(meta_args.features)
 meta_args.output_size = 13
 args = meta_args
+
+import random
+import numpy as np
+import torch
+import tensorflow as tf
+
+def set_global_seed(seed):
+    """Set the seed for all random number generators."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    tf.random.set_seed(seed)

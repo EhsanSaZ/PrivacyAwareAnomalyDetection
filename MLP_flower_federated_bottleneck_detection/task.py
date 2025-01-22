@@ -2,7 +2,7 @@
 import copy, os
 
 import numpy as np
-import torch
+import torch, random
 import torch.nn as nn
 import torch.optim as optim
 
@@ -17,6 +17,49 @@ from sklearn.metrics import f1_score
 
 from imblearn.over_sampling import RandomOverSampler
 
+
+# print("Python Random:", [random.random() for _ in range(3)])
+# print("NumPy Random:", np.random.rand(3))
+# print("Torch Random:", torch.rand(3))
+
+
+def normalize_df(df):
+    df['sender_avg_rtt_value'] = df['sender_avg_rtt_value'] / df[df.label_value == 0].sender_avg_rtt_value.mean()
+    df['sender_retrans'] = df['sender_retrans'] / df[df.label_value == 0].sender_seg_out.mean()
+    # df["sender_avg_send_value"] = df["sender_avg_send_value"] / df[df.label_value == 0].sender_avg_send_value.mean()
+    df["sender_segs_in"] = df["sender_segs_in"] / df[df.label_value == 0].sender_segs_in.mean()
+
+    # df["sender_ost_read"] = df["sender_ost_read"] / df[df.label_value == 0].sender_ost_read.mean()
+
+    df["sender_nic_send_bytes"] = df["sender_nic_send_bytes"] / df[df.label_value == 0].sender_nic_send_bytes.mean()
+    df["sender_nic_receive_bytes"] = df["sender_nic_receive_bytes"] / df[df.label_value == 0].sender_nic_receive_bytes.mean()
+
+    df["sender_remote_ost_read_bytes"] =df["sender_remote_ost_read_bytes"] / df[df.label_value == 0].sender_remote_ost_read_bytes.mean()
+
+    # df["receiver_segs_in"] = df["receiver_segs_in"] / df[df.label_value == 0].receiver_segs_in.mean()
+    df["receiver_seg_out"] = df["receiver_seg_out"] / df[df.label_value == 0].receiver_seg_out.mean()
+
+    # df["receiver_write_bytes"] = df["receiver_write_bytes"] / df[df.label_value == 0].receiver_write_bytes.mean()
+    # df["receiver_ost_write"] = df["receiver_ost_write"] / df[df.label_value == 0].receiver_ost_write.mean()
+
+    df["receiver_nic_send_bytes"] = df["receiver_nic_send_bytes"] / df[df.label_value == 0].receiver_nic_send_bytes.mean()
+    df["receiver_nic_receive_bytes"] = df["receiver_nic_receive_bytes"] / df[df.label_value == 0].receiver_nic_receive_bytes.mean()
+
+    df["receiver_remote_ost_write_bytes"] = df["receiver_remote_ost_write_bytes"] / df[df.label_value == 0].receiver_remote_ost_write_bytes.mean()
+
+    df["sender_tcp_snd_buffer_max"] = df["sender_tcp_snd_buffer_max"] / df[df.label_value == 0].sender_tcp_snd_buffer_max.mean()
+    df["receiver_tcp_rcv_buffer_max"] = df["receiver_tcp_rcv_buffer_max"] / df[df.label_value == 0].receiver_tcp_rcv_buffer_max.mean()
+
+    # df["sender_write_bytes_io"] = df["sender_write_bytes_io"] / df[df.label_value == 0].sender_write_bytes_io.mean()
+    # df["sender_read_bytes_io"] = df["sender_read_bytes_io"] / df[df.label_value == 0].sender_read_bytes_io.mean()
+    #
+    # df["receiver_read_bytes_io"] = df["receiver_read_bytes_io"] / df[df.label_value == 0].receiver_read_bytes_io.mean()
+    # df["receiver_write_bytes_io"] = df["receiver_write_bytes_io"] / df[df.label_value == 0].receiver_write_bytes_io.mean()
+
+    #---------------
+    # df["sender_ssthresh_value"] = df.sender_ssthresh_value / df.sender_cwnd_rate
+    # df["sender_req_active"] = df["sender_req_active"] / df[df.label_value == 0].sender_req_active.mean()
+    return df
 
 def process_and_prepare_loaders(args, remove_labels=None, features=None, filenames=None):
     if remove_labels is None:
@@ -173,6 +216,7 @@ def load_datasets(partition_id: int, args=None):
 def train(net, ldr_train, epochs: int, device, verbose=False, local_lr=0.001):
     loss_func = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=local_lr)
+    # optimizer = optim.Adam(net.parameters(), lr=local_lr, betas=(0.9, 0.999), eps=1e-08)
     epochs_losses = []
     net.train()
     for epoch in range(epochs):
