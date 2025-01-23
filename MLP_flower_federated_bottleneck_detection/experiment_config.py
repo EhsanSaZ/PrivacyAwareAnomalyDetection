@@ -63,20 +63,24 @@ meta_args.batch_size = 150
 # meta_args.data_type = ""
 # meta_args.epoch_iterations = 20
 
-meta_args.local_lr = 0.003 # with simple adam no betas 
-meta_args.min_local_lr = 1e-05
-meta_args.decay_weight = 0.85
-meta_args.data_type = ""
-meta_args.epoch_iterations = 20
-
-
-# meta_args.local_lr = 0.004 # with simple adam no betas 
-# meta_args.min_local_lr = 1e-08
+# meta_args.local_lr = 0.003 # with simple adam no betas gets 81% at round 29 and gets ~87% but train lossalso much lower than above case
+# meta_args.min_local_lr = 1e-05
 # meta_args.decay_weight = 0.85
 # meta_args.data_type = ""
 # meta_args.epoch_iterations = 20
 
+# meta_args.local_lr = 0.003 # with simple adam no betas gets 81% at round ?? and gets ~87% but train lossalso much lower than above case
+# meta_args.min_local_lr = 1e-05
+# meta_args.min_local_lr = 1e-05
+# meta_args.decay_weight = 0.9
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 20
 
+meta_args.local_lr = 0.003 # with simple adam no betas 81% at round 31 and gets ~87% but train lossalso much lower than above case
+meta_args.min_local_lr = 1e-08
+meta_args.decay_weight = 0.9
+meta_args.data_type = ""
+meta_args.epoch_iterations = 20
 
 meta_args.remove_labels = [17, 21, 25, 29]
 meta_args.features = ['sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in', 'sender_tcp_snd_buffer_max',
