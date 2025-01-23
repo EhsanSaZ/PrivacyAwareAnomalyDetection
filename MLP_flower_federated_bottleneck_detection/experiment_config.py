@@ -100,7 +100,7 @@ meta_args.filenames = {
 }
 
 meta_args.input_size = len(meta_args.features)
-meta_args.output_size = 13
+meta_args.output_size = 9
 args = meta_args
 
 import random
