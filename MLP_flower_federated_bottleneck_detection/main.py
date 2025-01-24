@@ -20,14 +20,16 @@ if __name__ == "__main__":
 
     for r in range(args.repeat):
         # r = r + 1
-
+        args.seed = args.seed + r
+        set_global_seed(args.seed)
         clients_data_loaders, client_test_loaders, global_test_loader, total_classes, args = process_and_prepare_loaders(args, remove_labels=args.remove_labels, features=args.features, filenames=args.filenames)
         # print(clients_data_loaders, "\n")
         # print(client_test_loaders, "\n")
         summarize_dataloader(client_test_loaders["wisconsin_ssd_merged"])
-        client = create_client(args=args)
+        
+        client = create_client(args=args, data_loaders=(clients_data_loaders, client_test_loaders))
         # server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=args.round)
-        server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=70) 
+        server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=1) 
 
         run_simulation(
             server_app=server,

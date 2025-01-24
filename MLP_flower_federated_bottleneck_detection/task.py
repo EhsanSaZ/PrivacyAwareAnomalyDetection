@@ -18,11 +18,6 @@ from sklearn.metrics import f1_score
 from imblearn.over_sampling import RandomOverSampler
 
 
-# print("Python Random:", [random.random() for _ in range(3)])
-# print("NumPy Random:", np.random.rand(3))
-# print("Torch Random:", torch.rand(3))
-
-
 def normalize_df(df):
     df['sender_avg_rtt_value'] = df['sender_avg_rtt_value'] / df[df.label_value == 0].sender_avg_rtt_value.mean()
     df['sender_retrans'] = df['sender_retrans'] / df[df.label_value == 0].sender_seg_out.mean()
@@ -69,10 +64,10 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
                     'receiver_seg_out', 'receiver_tcp_rcv_buffer_max', 'receiver_nic_send_bytes', 'receiver_nic_receive_bytes', 'sender_remote_ost_read_bytes', 'receiver_remote_ost_write_bytes']
     if filenames is None:
         filenames = {
-            "wisconsin_ssd_merged": "./ds/v3/selected_cols_merged/wisconsin-220g2-10Gbps_ssd_merged_V3.csv",
+            "wisconsin_ssd_merged": "../ds/v3/selected_cols_merged/wisconsin-220g2-10Gbps_ssd_merged_V3.csv",
             # "wisconsin_ssd_unmerged": "./ds/v3/selected_cols/wisconsin-220g2-10Gbps_ssd_unmerged_V3.csv",
 
-            "wisconsin_hdd_merged": "./ds/v3/selected_cols_merged/wisconsin-220g2-10Gbps_hdd_merged_V3.csv",
+            "wisconsin_hdd_merged": "../ds/v3/selected_cols_merged/wisconsin-220g2-10Gbps_hdd_merged_V3.csv",
             # "wisconsin_hdd_unmerged": "./ds/v3/selected_cols/wisconsin-220g2-10Gbps_hdd_unmerged_V3.csv",
         }
 
@@ -103,7 +98,7 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
 
         # Step 3: Split into train and test sets
         # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        X_train, X_test, y_train, y_test = train_test_split(X,y)
+        X_train, X_test, y_train, y_test = train_test_split(X,y, random_state=args.seed)
         
        
         # X_train = scaler.fit_transform(X_train)
@@ -200,10 +195,8 @@ def summarize_dataloader(dataloader):
     print("===========================")
 
 
-def load_datasets(partition_id: int, args=None):
-   
-    clients_data_loaders, client_test_loaders, global_test_loader, total_classes, args = process_and_prepare_loaders(args, remove_labels=args.remove_labels, features=args.features, filenames=args.filenames)
-
+def load_datasets(partition_id: int, data_loaders: tuple[dict[str, DataLoader], dict[str, DataLoader]], args=None):
+    clients_data_loaders, client_test_loaders = data_loaders
     client_name = list(args.filenames.keys())[int(partition_id)]
     
     trainloader = clients_data_loaders[client_name]

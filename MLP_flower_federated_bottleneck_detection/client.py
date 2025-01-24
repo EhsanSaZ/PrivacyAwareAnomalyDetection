@@ -5,14 +5,6 @@ import copy
 # import matplotlib.pyplot as plt
 import numpy as np
 import torch
-# import torch.nn as nn
-# import torch.optim as optim
-# import torch.nn.functional as F
-# import torchvision.transforms as transforms
-# from datasets.utils.logging import disable_progress_bar
-# from torch.utils.data import DataLoader, TensorDataset
-# from torch.utils.tensorboard import SummaryWriter
-
 
 # import flwr
 from flwr.client import Client, ClientApp, NumPyClient
@@ -95,7 +87,7 @@ class FlowerClient(NumPyClient):
         return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score)}
         # return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score)}
     
-def create_client(args) -> ClientApp:
+def create_client(args, data_loaders) -> ClientApp:
     
     def client_fn(context: Context) -> Client:
         """Create a Flower client representing a single organization."""
@@ -107,7 +99,7 @@ def create_client(args) -> ClientApp:
         # will train and evaluate on their own unique data partition
         # Read the node_config to fetch data partition associated to this node
         partition_id = context.node_config["partition-id"]
-        trainloader, valloader, _ = load_datasets(partition_id=partition_id, args=args)
+        trainloader, valloader, _ = load_datasets(partition_id=partition_id, data_loaders=data_loaders, args=args)
 
         # Create a single Flower client representing a single organization
         # FlowerClient is a subclass of NumPyClient, so we need to call .to_client()
