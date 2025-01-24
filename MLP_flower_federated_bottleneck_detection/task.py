@@ -106,7 +106,8 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
         # X_test = scaler.transform(X_test)
 
         # Step 4: Apply oversampling to training data
-        X_train, y_train = RandomOverSampler(sampling_strategy="all", random_state=args.seed).fit_resample(X_train, y_train)
+        # X_train, y_train = RandomOverSampler(sampling_strategy="all", random_state=args.seed).fit_resample(X_train, y_train)
+        X_train, y_train = RandomOverSampler(sampling_strategy="all").fit_resample(X_train, y_train)
 
         X_train = X_train.to_numpy() if not isinstance(X_train, np.ndarray) else X_train
         X_test = X_test.to_numpy() if not isinstance(X_test, np.ndarray) else X_test
