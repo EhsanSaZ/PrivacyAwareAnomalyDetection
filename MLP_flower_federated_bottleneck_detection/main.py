@@ -17,10 +17,11 @@ from client import create_client
 from server import create_server
 
 if __name__ == "__main__":
-
+    args.repeat = 3
     for r in range(args.repeat):
         # r = r + 1
-        args.seed = args.seed + r
+        args.seed = args.seed + r + 42
+        # args.seed = args.seed + r + 5
         set_global_seed(args.seed)
         clients_data_loaders, client_test_loaders, global_test_loader, total_classes, args = process_and_prepare_loaders(args, remove_labels=args.remove_labels, features=args.features, filenames=args.filenames)
         # print(clients_data_loaders, "\n")
@@ -29,7 +30,7 @@ if __name__ == "__main__":
         
         client = create_client(args=args, data_loaders=(clients_data_loaders, client_test_loaders))
         # server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=args.round)
-        server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=1) 
+        server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=3) 
 
         run_simulation(
             server_app=server,

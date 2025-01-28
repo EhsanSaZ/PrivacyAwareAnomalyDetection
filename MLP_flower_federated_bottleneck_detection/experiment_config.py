@@ -1,6 +1,9 @@
 # config.py
 import argparse
 import torch
+import random
+import numpy as np
+import tensorflow as tf
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu',
@@ -25,8 +28,10 @@ meta_args.round = 70  # 50
 meta_args.epoch_iterations = 20
 meta_args.batch_size = 150
 
-# meta_args.local_lr = 0.001  ~82 max accuracy
+# meta_args.local_lr = 0.001 # with min lr 0.001
+# meta_args.min_local_lr = 0.001
 # meta_args.decay_weight = 1.0
+# meta_args.data_type = ""
 # meta_args.epoch_iterations = 20
 
 # meta_args.local_lr = 0.003 
@@ -63,11 +68,11 @@ meta_args.batch_size = 150
 # meta_args.data_type = ""
 # meta_args.epoch_iterations = 20
 
-# meta_args.local_lr = 0.003 # with simple adam no betas gets 81% at round 29 and gets ~87% but train lossalso much lower than above case
-# meta_args.min_local_lr = 1e-05
-# meta_args.decay_weight = 0.85
-# meta_args.data_type = ""
-# meta_args.epoch_iterations = 20
+meta_args.local_lr = 0.003 # with simple adam no betas gets 81% at round 29 and gets ~87% but train lossalso much lower than above case
+meta_args.min_local_lr = 1e-05
+meta_args.decay_weight = 0.85
+meta_args.data_type = ""
+meta_args.epoch_iterations = 20
 
 # meta_args.local_lr = 0.003 # with simple adam no betas gets 81% at round ?? and gets ~87% but train lossalso much lower than above case
 # meta_args.min_local_lr = 1e-05
@@ -75,11 +80,11 @@ meta_args.batch_size = 150
 # meta_args.data_type = ""
 # meta_args.epoch_iterations = 20
 
-meta_args.local_lr = 0.003 # with simple adam no betas 81% at round 31 and gets ~87% but train lossalso much lower than above case
-meta_args.min_local_lr = 1e-08
-meta_args.decay_weight = 0.9
-meta_args.data_type = ""
-meta_args.epoch_iterations = 20
+# meta_args.local_lr = 0.002 # with simple adam no betas 81% at round 31 and gets ~87% but train lossalso much lower than above case
+# meta_args.min_local_lr = 1e-05
+# meta_args.decay_weight = 0.9
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 20
 
 meta_args.remove_labels = [17, 21, 25, 29]
 meta_args.features = ['sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in', 'sender_tcp_snd_buffer_max',
@@ -103,10 +108,7 @@ meta_args.input_size = len(meta_args.features)
 meta_args.output_size = 9
 args = meta_args
 
-import random
-import numpy as np
-import torch
-import tensorflow as tf
+
 
 def set_global_seed(seed):
     """Set the seed for all random number generators."""

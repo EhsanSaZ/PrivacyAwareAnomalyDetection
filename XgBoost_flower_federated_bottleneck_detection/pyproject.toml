@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "XgBoost_flower_federated"
+version = "1.0.0"
+description = "Federated Learning using Flower and XGBoost"
+license = "Apache-2.0"
+dependencies = [
+    "xgboost>=2.0.0",
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "imblearn",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.flwr.app]
+publisher = "flwrlabs"
+
+[tool.flwr.app.components]
+serverapp = "XgBoost_flower_federated.server_app:app"
+clientapp = "XgBoost_flower_federated.client_app:app"
+
+[tool.flwr.app.config]
+# ServerApp Configuration
+num-server-rounds = 10
+fraction-fit = 1.0
+fraction-evaluate = 1.0
+
+# ClientApp Configuration
+local-epochs = 1
+params.objective = "multi:softmax"
+# params.objective = "multi:softprob"
+params.eta = 0.1
+params.n_estimators = 500
+params.max-depth = 8
+params.eval-metric = "mlogloss"
+# params.eval-metric = "merror"
+# params.eval-metric = "auc"
+params.nthread = 16
+params.num-parallel-tree = 1
+params.subsample = 0.8
+params.tree-method = "hist"
+
+
+[tool.flwr.app.config.resources]
+seed = 42
+
+[tool.flwr.app.config.resources.filenames]
+wisconsin_ssd_merged = "../ds/v3/selected_cols_merged/wisconsin-220g2-10Gbps_ssd_merged_V3.csv"
+wisconsin_hdd_merged = "../ds/v3/selected_cols_merged/wisconsin-220g2-10Gbps_hdd_merged_V3.csv"
+wisconsin_hdd_ssd_merged = "../ds/v3/selected_cols_merged/wisconsin-220g2-hdd-ssd_merged_V3.csv"
+wisconsin_ssd_delay_10ms_merged = "../ds/v3/selected_cols_merged/wisconsin-220g2-ssd-delayed-10ms_merged_V3.csv"
+
+wisconsin_hdd_delay_10ms_merged = "../ds/v3/selected_cols_merged/wisconsin-220g2-hdd-delayed-10ms_merged_V3.csv"
+utah_ssd_merged = "../ds/v3/selected_cols_merged/utah-6525-25g-25Gbps_ssd_merged.csv"
+utah_ssd_delay_30ms_merged = "../ds/v3/selected_cols_merged/utah-6525-25-ssd-delayed-30ms_merged_V3.csv"
+utah_ssd_delay_10ms_merged = "../ds/v3/selected_cols_merged/utah-6525-25-ssd-delayed-10ms_merged_V3.csv"
+
+[tool.flwr.app.config.resources.remove_labels]
+label1 = 17
+label2 = 21
+label3 = 25
+label4 = 29
+
+[tool.flwr.app.config.resources.features]
+f_name1 = "sender_avg_rtt_value"
+f_name2 = "sender_retrans"
+f_name3 = "sender_segs_in"
+f_name4 = "sender_tcp_snd_buffer_max"
+f_name5 = "sender_nic_send_bytes"
+f_name6 = "sender_nic_receive_bytes"
+f_name7 = "receiver_seg_out"
+f_name8 = "receiver_tcp_rcv_buffer_max"
+f_name9 = "receiver_nic_send_bytes"
+f_name10 = "receiver_nic_receive_bytes"
+f_name11 = "sender_remote_ost_read_bytes"
+f_name12 = "receiver_remote_ost_write_bytes"
+
+[tool.flwr.federations]
+default = "local-simulation"
+
+[tool.flwr.federations.local-simulation]
+options.num-supernodes = 8
