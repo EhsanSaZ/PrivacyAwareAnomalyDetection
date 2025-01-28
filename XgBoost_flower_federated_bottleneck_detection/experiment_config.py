@@ -40,16 +40,14 @@ meta_args.features = ['sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in'
 meta_args.filenames = { 
     "wisconsin_ssd_merged": "./ds/v3/selected_cols_merged/wisconsin-220g2-10Gbps_ssd_merged_V3.csv",
     "wisconsin_hdd_merged": "./ds/v3/selected_cols_merged/wisconsin-220g2-10Gbps_hdd_merged_V3.csv",
-    # "wisconsin_hdd_ssd_merged": "../ds/v3/selected_cols_merged/wisconsin-220g2-hdd-ssd_merged_V3.csv",
-    # "wisconsin_ssd_delay_10ms_merged":"../ds/v3/selected_cols_merged/wisconsin-220g2-ssd-delayed-10ms_merged_V3.csv",
+    "wisconsin_hdd_ssd_merged": "./ds/v3/selected_cols_merged/wisconsin-220g2-hdd-ssd_merged_V3.csv",
+    "wisconsin_ssd_delay_10ms_merged":"./ds/v3/selected_cols_merged/wisconsin-220g2-ssd-delayed-10ms_merged_V3.csv",
 
-    # "wisconsin_hdd_delay_10ms_merged":"../ds/v3/selected_cols_merged/wisconsin-220g2-hdd-delayed-10ms_merged_V3.csv",
-    # "utah_ssd_merged": "../ds/v3/selected_cols_merged/utah-6525-25g-25Gbps_ssd_merged.csv",
-    # "utah_ssd_delay_30ms_merged":"../ds/v3/selected_cols_merged/utah-6525-25-ssd-delayed-30ms_merged_V3.csv",
-    # "utah_ssd_delay_10ms_merged":"../ds/v3/selected_cols_merged/utah-6525-25-ssd-delayed-10ms_merged_V3.csv",
+    "wisconsin_hdd_delay_10ms_merged":"./ds/v3/selected_cols_merged/wisconsin-220g2-hdd-delayed-10ms_merged_V3.csv",
+    "utah_ssd_merged": "./ds/v3/selected_cols_merged/utah-6525-25g-25Gbps_ssd_merged.csv",
+    "utah_ssd_delay_30ms_merged":"./ds/v3/selected_cols_merged/utah-6525-25-ssd-delayed-30ms_merged_V3.csv",
+    "utah_ssd_delay_10ms_merged":"./ds/v3/selected_cols_merged/utah-6525-25-ssd-delayed-10ms_merged_V3.csv",
     }
-
-print(meta_args)
 
 args = meta_args
 
