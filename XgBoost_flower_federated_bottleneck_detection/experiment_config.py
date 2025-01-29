@@ -49,6 +49,24 @@ meta_args.filenames = {
     "utah_ssd_delay_10ms_merged":"./ds/v3/selected_cols_merged/utah-6525-25-ssd-delayed-10ms_merged_V3.csv",
     }
 
+meta_args.local_epochs = 1
+meta_args.params = {
+    "objective": "multi:softmax",
+    # "objective": "multi:softprob",
+    "eta": 0.1,
+    # "n_estimators": 500,
+    "max_depth": 8,
+    "eval_metric": "mlogloss",
+    # "eval-metric": "auc",
+    # "eval-metric": "merror",
+    "nthread": 16,
+    "num_parallel_tree": 1,
+    "subsample": 0.8,
+    "tree_method": "hist"
+    }
+
+
+
 args = meta_args
 
 def set_global_seed(seed):

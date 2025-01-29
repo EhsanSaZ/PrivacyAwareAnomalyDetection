@@ -25,25 +25,7 @@ if __name__ == "__main__":
         summarize_dataset(client_test_loaders["wisconsin_hdd_merged"])
 
         server_app = get_server_app()
-        client_run_config = {
-            "args": args,
-            "local-epochs": 1,
-            "params": {
-                "objective": "multi:softmax",
-                # "objective": "multi:softprob",
-                "eta": 0.1,
-                # "n_estimators": 500,
-                "max_depth": 8,
-                "eval_metric": "mlogloss",
-                # "eval-metric": "auc",
-                # "eval-metric": "merror",
-                "nthread": 16,
-                "num_parallel_tree": 1,
-                "subsample": 0.8,
-                "tree_method": "hist"
-            },
-        }
-        client_app = get_client_app(client_run_config)
+        client_app = get_client_app(args)
         run_simulation(
             server_app=server_app,
             client_app=client_app,

@@ -91,21 +91,21 @@ class FlowerClient(Client):
             metrics={"accuracy": accuracy, "f1_score": f1, "mlogloss": mlogloss_value},
         )
 
-def get_client_app(client_run_config):
+def get_client_app(args):
     def client_fn(context):
         # Use SingletonDataLoader to get data loaders
         # data_loader = SingletonDataLoader.get_instance()
         # print(data_loader)
         # print(client_run_config)
-        args = client_run_config["args"]
+
         loader = SingletonDataLoader.get_instance()
         clients_data_loaders, client_test_loaders, _, total_classes, filenames = loader.get_data_loaders(remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed)
 
         partition_id = context.node_config["partition-id"]
                 
-        num_local_rounds = client_run_config["local-epochs"]
+        num_local_rounds = args.local_epochs
             
-        params = replace_keys(client_run_config["params"])
+        params = replace_keys(args.params)
         params["num_class"] = total_classes
         train_dmatrix, valid_dmatrix, _ = load_datasets(partition_id=partition_id, 
                                                         data_loaders=(clients_data_loaders, client_test_loaders),
