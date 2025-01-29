@@ -3,3 +3,4 @@
 log/*
 .ipynb_checkpoints
 prototype/db.json
+__pycache__/
