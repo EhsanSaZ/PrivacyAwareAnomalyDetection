@@ -21,11 +21,16 @@ meta_args = parser.parse_args("")
 # print(f"Flower {flwr.__version__} / PyTorch {torch.__version__}")
 # disable_progress_bar()
 meta_args.device = torch.device('cuda:{}'.format(meta_args.gpu) if torch.cuda.is_available() and meta_args.gpu != -1 else 'cpu')
+
+meta_args.TR_enabled = False
+meta_args.save_dir = "data_loaders"
 meta_args.log_path = "results/MLP_fed_avg_WTR"
+
 meta_args.model = "mlp"
 
 meta_args.round = 100  # 50
 meta_args.epoch_iterations = 20
+# meta_args.batch_size = 64
 meta_args.batch_size = 150
 
 # meta_args.local_lr = 0.001 # with min lr 0.001
@@ -85,6 +90,24 @@ meta_args.epoch_iterations = 20
 # meta_args.decay_weight = 0.9
 # meta_args.data_type = ""
 # meta_args.epoch_iterations = 20
+
+# TR Settings  ****
+# meta_args.TR_enabled = True 
+# meta_args.save_dir = "data_loaders_TR"
+# meta_args.log_path = "results/MLP_fed_avg_TR"
+
+# meta_args.local_lr = 0.001 # with simple adam no betas gets 81% at round 29 and gets ~87% but train lossalso much lower than above case
+# meta_args.min_local_lr = 1e-08
+# meta_args.decay_weight = 0.6
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 1
+
+# meta_args.local_lr = 0.003 # with simple adam no betas gets 81% at round 29 and gets ~87% but train lossalso much lower than above case
+# meta_args.min_local_lr = 1e-08
+# meta_args.decay_weight = 0.85
+# meta_args.data_type = ""
+# meta_args.epoch_iterations = 1
+
 
 meta_args.remove_labels = [17, 21, 25, 29]
 meta_args.features = ['sender_cwnd_rate', 'sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in', 'sender_tcp_snd_buffer_max',

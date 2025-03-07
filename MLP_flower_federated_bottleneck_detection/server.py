@@ -86,7 +86,7 @@ def fit_metrics_aggregation_fn(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     f1_scores = [num_examples * m["f1_score"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, m in metrics]
     # return {"accuracy": sum(accuracies) / sum(examples), "loss": sum(losses) / sum(examples), "f1_score": sum(f1_scores) / sum(examples), "train_loss": sum(train_loss) / len(train_loss)}
-    return {"accuracy": sum(accuracies) / sum(examples), "loss": sum(train_loss) / len(train_loss), "f1_score": sum(f1_scores) / sum(examples), "train_loss": sum(train_loss) / len(train_loss)}
+    return {"accuracy": sum(accuracies) / sum(examples), "loss": sum(losses) / len(examples), "f1_score": sum(f1_scores) / sum(examples), "train_loss": sum(train_loss) / len(train_loss), "metrics": metrics}
 
 
 class FedAvgCustom(FedAvg):
@@ -114,12 +114,12 @@ class FedAvgCustom(FedAvg):
         self.writer.add_scalar("Clients_agg/train_f1_score", metrics_aggregated["f1_score"], server_round)  
         self.writer.add_scalar("Clients_agg/train_loss", metrics_aggregated["train_loss"], server_round)
         
-        # metrics = metrics_aggregated["metrics"]
-        # for _, m in metrics:
-        #     client_id = m["client_id"]
-        #     self.writer.add_scalar(f"Clients_Accuracy_Train/Client_{client_id + 1}", m["accuracy"], server_round)
-        #     self.writer.add_scalar(f"Clients_F1_Score_Train/Client_{client_id + 1}", m["f1_score"], server_round)
-        #     self.writer.add_scalar(f"Clients_Loss_Train/Client_{client_id + 1}", m["train_local_loss"], server_round)
+        metrics = metrics_aggregated["metrics"]
+        for _, m in metrics:
+            client_id = m["client_id"]
+            self.writer.add_scalar(f"Clients_Accuracy_Train/Client_{client_id + 1}", m["accuracy"], server_round)
+            self.writer.add_scalar(f"Clients_F1_Score_Train/Client_{client_id + 1}", m["f1_score"], server_round)
+            self.writer.add_scalar(f"Clients_Loss_Train/Client_{client_id + 1}", m["train_local_loss"], server_round)
         return parameters_aggregated, metrics_aggregated
     
     def aggregate_evaluate(self, server_round: int, results: list[tuple[ClientProxy, EvaluateRes]], failures: list[Union[tuple[ClientProxy, EvaluateRes], BaseException]], ) -> tuple[Optional[float], dict[str, Scalar]]:
@@ -153,6 +153,7 @@ class FedAvgCustom(FedAvg):
     def custom_on_fit_config_fn(self, server_round: int) ->dict[str, Scalar]:
         """Return a configuration for the next round of training."""
         self.lr = self.lr * self.decay_weight if self.decay_weight < 1.0 and self.lr > self.min_local_lr else self.min_local_lr
+        # self.lr = self.lr * self.decay_weight if self.decay_weight < 1.0  else self.lr
         print(f"Round {server_round} - Learning rate: {self.lr}")
         return {"lr": self.lr}
 
