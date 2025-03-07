@@ -21,10 +21,10 @@ meta_args = parser.parse_args("")
 # print(f"Flower {flwr.__version__} / PyTorch {torch.__version__}")
 # disable_progress_bar()
 meta_args.device = torch.device('cuda:{}'.format(meta_args.gpu) if torch.cuda.is_available() and meta_args.gpu != -1 else 'cpu')
-meta_args.log_path = "results/fed_avg_flower"
+meta_args.log_path = "results/MLP_fed_avg_WTR"
 meta_args.model = "mlp"
 
-meta_args.round = 70  # 50
+meta_args.round = 100  # 50
 meta_args.epoch_iterations = 20
 meta_args.batch_size = 150
 

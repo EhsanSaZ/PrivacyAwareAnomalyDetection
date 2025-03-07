@@ -57,12 +57,12 @@ def normalize_df(df):
     # df["sender_req_active"] = df["sender_req_active"] / df[df.label_value == 0].sender_req_active.mean()
     return df
 
-def process_and_prepare_loaders(args, remove_labels=None, features=None, filenames=None):
-    print(25 * "-" + " Creating data loaders" + 25 * '-')
+def process_and_prepare_loaders(args, remove_labels=None, features=None, filenames=None, save_dir="data_loaders"):
+    print("=" * 25 + " CREATING DATA LOADERS " + "=" * 25)
     if remove_labels is None:
         remove_labels = [17, 21, 25, 29]
     if features is None:
-        features = ['sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in', 'sender_tcp_snd_buffer_max','sender_nic_send_bytes', 'sender_nic_receive_bytes',
+        features = ['sender_cwnd_rate', 'sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in', 'sender_tcp_snd_buffer_max','sender_nic_send_bytes', 'sender_nic_receive_bytes',
                     'receiver_seg_out', 'receiver_tcp_rcv_buffer_max', 'receiver_nic_send_bytes', 'receiver_nic_receive_bytes', 'sender_remote_ost_read_bytes', 'receiver_remote_ost_write_bytes']
     if filenames is None:
         filenames = {
@@ -73,11 +73,43 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
             # "wisconsin_hdd_unmerged": "./ds/v3/selected_cols/wisconsin-220g2-10Gbps_hdd_unmerged_V3.csv",
         }
 
-    clients_data_loaders = {}
-    client_test_loaders = {}
-    combined_X_test, combined_y_test = [], []
-    test_data_dict = {}
+    os.makedirs(save_dir, exist_ok=True)
+    dataset_name = "all_testbeds"
+    dataset_file = os.path.join(save_dir, f"data_loaders_{dataset_name}_seed_{args.seed}.npz")
+    if os.path.exists(dataset_file):
+        print("Loading saved dataset...")
+        dataset = np.load(dataset_file, allow_pickle=True)
+        clients_data_loaders = {}
+        client_test_loaders = {}
+        for client in dataset['train'].item():
+            train_data = dataset['train'].item()[client]['data']
+            train_label = dataset['train'].item()[client]['label']
+            test_data = dataset['test'].item()[client]['data']
+            test_label = dataset['test'].item()[client]['label']
 
+            train_dataset = TensorDataset(
+                torch.tensor(train_data, dtype=torch.float32),
+                torch.tensor(train_label, dtype=torch.long)
+            )
+            test_dataset = TensorDataset(
+                torch.tensor(test_data, dtype=torch.float32),
+                torch.tensor(test_label, dtype=torch.long)
+            )
+            clients_data_loaders[client] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True) 
+            client_test_loaders[client] = DataLoader(test_dataset, batch_size=args.batch_size)  
+        combined_X_test = np.vstack([dataset['test'].item()[client]['data'] for client in dataset['test'].item()])
+        combined_y_test = np.hstack([dataset['test'].item()[client]['label'] for client in dataset['test'].item()])
+        global_test_loader = DataLoader(TensorDataset(torch.tensor(combined_X_test, dtype=torch.float32),
+                                                    torch.tensor(combined_y_test, dtype=torch.long))
+                                        , batch_size=args.batch_size, shuffle=False)
+        total_classes = len(np.unique(combined_y_test))
+        args.input_size = len(features)
+        args.output_size = total_classes
+        return clients_data_loaders, client_test_loaders, global_test_loader, total_classes, args
+    
+    print("Saved dataset not found. Processing and creating dataset...")
+    clients_data, test_data = {}, {}
+    combined_X_test, combined_y_test = [], []
     for client_name, file_path in filenames.items():
         # Step 1: Load the dataset and Label encoding and scaling
         df = pd.read_csv(file_path)
@@ -99,7 +131,6 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
         # X = scaler.fit_transform(X)
 
         # Step 3: Split into train and test sets
-        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         X_train, X_test, y_train, y_test = train_test_split(X,y, random_state=args.seed)
         
        
@@ -115,35 +146,49 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
         y_train = y_train.to_numpy() if not isinstance(y_train, np.ndarray) else y_train
         y_test = y_test.to_numpy() if not isinstance(y_test, np.ndarray) else y_test
 
+        clients_data[client_name] = {
+                'data': X_train,
+                'label': y_train
+        }
+        test_data[client_name] = {
+                'data': X_test,
+                'label': y_test
+        }
+    # Save dataset
+    print("Saving dataset...")
+    np.savez_compressed(
+        dataset_file,
+        train=clients_data,
+        test=test_data
+    )
 
-        # Step 5: Create train DataLoader
-        train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32),
-                                    torch.tensor(y_train, dtype=torch.long))
+    # Recreate combined test data
+    combined_X_test = np.vstack([test_data[client]['data'] for client in clients_data])
+    combined_y_test = np.hstack([test_data[client]['label'] for client in test_data])
 
+    clients_data_loaders = {}
+    client_test_loaders = {}
+
+    for client in clients_data:
+        train_dataset = TensorDataset(
+            torch.tensor(clients_data[client]['data'], dtype=torch.float32),
+            torch.tensor(clients_data[client]['label'], dtype=torch.long)
+        )
         ldr_train = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-        # data_loader_list.append(ldr_train)
-        clients_data_loaders[client_name] = ldr_train
+        clients_data_loaders[client] = ldr_train
 
-        # Combine test data for unified test dataset
-        combined_X_test.append(X_test)
-        combined_y_test.append(y_test)
-
-        # Create individual test DataLoader
-        test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32),
-                                      torch.tensor(y_test, dtype=torch.long))
+        test_dataset = TensorDataset(
+            torch.tensor(test_data[client]['data'], dtype=torch.float32),
+            torch.tensor(test_data[client]['label'], dtype=torch.long)
+        )
+        client_test_loaders[client] = DataLoader(test_dataset, batch_size=args.batch_size)
         
-        client_test_loaders[client_name] = DataLoader(test_dataset, batch_size=args.batch_size)
 
-        
-    # Combine all test data
-    combined_X_test = np.vstack(combined_X_test)
-    combined_y_test = np.hstack(combined_y_test)
     total_classes = len(np.unique(combined_y_test))
      # Create combined test DataLoader
-    combined_test_dataset = TensorDataset(torch.tensor(combined_X_test, dtype=torch.float32),
-                                           torch.tensor(combined_y_test, dtype=torch.long))
-    global_test_loader = DataLoader(combined_test_dataset, batch_size=args.batch_size, shuffle=False)
-
+    global_test_loader = DataLoader(TensorDataset(torch.tensor(combined_X_test, dtype=torch.float32),
+                                                   torch.tensor(combined_y_test, dtype=torch.long))
+                                    , batch_size=args.batch_size, shuffle=False)
 
     args.input_size = len(features)
     args.output_size = total_classes
