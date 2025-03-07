@@ -5,3 +5,4 @@ log/*
 prototype/db.json
 __pycache__/
 data_loaders/
+data_loaders_TR/
