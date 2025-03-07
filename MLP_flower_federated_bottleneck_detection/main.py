@@ -1,9 +1,4 @@
-import random
-import numpy as np
-import torch
-import tensorflow as tf
-
-from datasets.utils.logging import disable_progress_bar
+# from datasets.utils.logging import disable_progress_bar
 from flwr.simulation import run_simulation
 from experiment_config import set_global_seed, args
 
