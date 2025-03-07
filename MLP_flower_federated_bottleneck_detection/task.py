@@ -55,6 +55,7 @@ def normalize_df(df):
     #---------------
     # df["sender_ssthresh_value"] = df.sender_ssthresh_value / df.sender_cwnd_rate
     # df["sender_req_active"] = df["sender_req_active"] / df[df.label_value == 0].sender_req_active.mean()
+    # df["sender_cwnd_rate"] = df["sender_cwnd_rate"] / df[df.label_value == 0].sender_cwnd_rate.mean()
     return df
 
 def process_and_prepare_loaders(args, remove_labels=None, features=None, filenames=None, save_dir="data_loaders"):
@@ -119,7 +120,8 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
             df = df.drop(df[df.label_value == lbl].index)
         
         # Normalize for transfer learning 
-        # df = normalize_df(df)
+        if args.TE_enabled:
+            df = normalize_df(df)
 
         X = df.drop(columns="label_value")[features]
         y = df.label_value
