@@ -21,7 +21,7 @@ meta_args = parser.parse_args("")
 # print(f"Flower {flwr.__version__} / PyTorch {torch.__version__}")
 # disable_progress_bar()
 meta_args.device = torch.device('cuda:{}'.format(meta_args.gpu) if torch.cuda.is_available() and meta_args.gpu != -1 else 'cpu')
-meta_args.log_path = "fed_avg_flower"
+meta_args.log_path = "results/fed_avg_flower"
 meta_args.model = "mlp"
 
 meta_args.round = 70  # 50
@@ -87,7 +87,7 @@ meta_args.epoch_iterations = 20
 # meta_args.epoch_iterations = 20
 
 meta_args.remove_labels = [17, 21, 25, 29]
-meta_args.features = ['sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in', 'sender_tcp_snd_buffer_max',
+meta_args.features = ['sender_cwnd_rate', 'sender_avg_rtt_value', 'sender_retrans', 'sender_segs_in', 'sender_tcp_snd_buffer_max',
                       'sender_nic_send_bytes', 'sender_nic_receive_bytes',
                       'receiver_seg_out', 'receiver_tcp_rcv_buffer_max', 'receiver_nic_send_bytes',
                       'receiver_nic_receive_bytes', 'sender_remote_ost_read_bytes', 'receiver_remote_ost_write_bytes']

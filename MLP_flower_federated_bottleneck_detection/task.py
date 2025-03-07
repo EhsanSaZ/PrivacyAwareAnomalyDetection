@@ -13,7 +13,8 @@ import pandas as pd
 from sklearn.calibration import LabelEncoder
 from sklearn.discriminant_analysis import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+from collections import Counter
 
 from imblearn.over_sampling import RandomOverSampler
 
@@ -237,7 +238,7 @@ def train(net, ldr_train, epochs: int, device, verbose=False, local_lr=0.001):
     return w_new, sum(epochs_losses) / len(epochs_losses)
 
 
-def test(net, ldr_test, device):
+def test(net, ldr_test, device, complete_results=False):
     
     net = copy.deepcopy(net).to(device)
     loss_func = nn.CrossEntropyLoss()
@@ -258,6 +259,23 @@ def test(net, ldr_test, device):
              all_preds.extend(predicted.cpu().numpy())
              all_targets.extend(target.cpu().numpy())
     test_loss /= len(ldr_test.dataset)
-    accuracy = 100.00 * correct.item() / total
-    f1 = f1_score(all_targets, all_preds, average='weighted')
-    return test_loss, accuracy, f1
+    accuracy = accuracy_score(all_targets, all_preds)
+    f1 = f1_score(all_targets, all_preds, average='weighted') 
+    results = { 
+            "f1_score": f1,
+            "accuracy": accuracy,          
+        }
+    if complete_results: 
+        precision = precision_score(all_targets, all_preds, average='weighted', zero_division=0)
+        recall = recall_score(all_targets, all_preds, average='weighted', zero_division=0)
+        # report = classification_report(all_targets, all_preds)
+        # confusion = confusion_matrix(all_targets, all_preds)
+        results.update({
+            "precision": precision,
+            "recall": recall,
+            # "report": report,
+            # "confusion_matrix": confusion
+        })
+       
+    
+    return test_loss, results

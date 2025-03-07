@@ -24,6 +24,7 @@ from flwr.server.strategy import FedAvg
 from flwr.server.client_proxy import ClientProxy
 from flwr.common import (
     FitRes,
+    EvaluateRes,
     Parameters,
     Scalar,
 )
@@ -31,6 +32,7 @@ from flwr.common import (
 from experiment_config import args, set_global_seed
 from model import MLPClassifier_torch
 from task import test, set_log_path
+from collections import Counter
 
 
 def get_evaluate_fn(testloader):
@@ -55,10 +57,10 @@ def get_evaluate_fn(testloader):
         model.load_state_dict(state_dict, strict=False)
 
         # call test (evaluate model as in centralised setting)
-        loss, accuracy, f1_score = test(model, testloader, args.device)
+        loss, metrics = test(model, testloader, args.device, complete_results=True)
+        metrics.update({"loss": loss})
         # print(f"Round {server_round} - Evaluation: loss {loss}, accuracy {accuracy}, f1_score {f1_score}")
-        return loss, {"accuracy": accuracy, "loss": loss, "f1_score": f1_score}
-
+        return loss, metrics
     return evaluate_fn
 
 # Define metric aggregation function
@@ -68,10 +70,11 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
     f1_scores = [num_examples * m["f1_score"] for num_examples, m in metrics]
+    # losses = [num_examples * m["loss"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
 
     # Aggregate and return custom metric (weighted average)
-    return {"accuracy": sum(accuracies) / sum(examples), "f1_score": sum(f1_scores) / sum(examples)}
+    return {"accuracy": sum(accuracies) / sum(examples), "f1_score": sum(f1_scores) / sum(examples), "metrics": metrics}
 
 def fit_metrics_aggregation_fn(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # print("\nPrinting metrics in fit_metrics_aggregation_fn function \n {} \n".format(metrics))
@@ -107,17 +110,45 @@ class FedAvgCustom(FedAvg):
     def aggregate_fit(self, server_round: int, results: list[tuple[ClientProxy, FitRes]], failures: list[Union[tuple[ClientProxy, FitRes], BaseException]],):
         parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
         # print(f"Round {server_round} - Aggregated fit: {metrics_aggregated}")
-        self.writer.add_scalar("train_accuracy", metrics_aggregated["accuracy"], server_round)
-        self.writer.add_scalar("train_f1_score", metrics_aggregated["f1_score"], server_round)  
-        self.writer.add_scalar("train_loss", metrics_aggregated["train_loss"], server_round)
+        self.writer.add_scalar("Clients_agg/train_accuracy", metrics_aggregated["accuracy"], server_round)
+        self.writer.add_scalar("Clients_agg/train_f1_score", metrics_aggregated["f1_score"], server_round)  
+        self.writer.add_scalar("Clients_agg/train_loss", metrics_aggregated["train_loss"], server_round)
+        
+        # metrics = metrics_aggregated["metrics"]
+        # for _, m in metrics:
+        #     client_id = m["client_id"]
+        #     self.writer.add_scalar(f"Clients_Accuracy_Train/Client_{client_id + 1}", m["accuracy"], server_round)
+        #     self.writer.add_scalar(f"Clients_F1_Score_Train/Client_{client_id + 1}", m["f1_score"], server_round)
+        #     self.writer.add_scalar(f"Clients_Loss_Train/Client_{client_id + 1}", m["train_local_loss"], server_round)
         return parameters_aggregated, metrics_aggregated
+    
+    def aggregate_evaluate(self, server_round: int, results: list[tuple[ClientProxy, EvaluateRes]], failures: list[Union[tuple[ClientProxy, EvaluateRes], BaseException]], ) -> tuple[Optional[float], dict[str, Scalar]]:
+        loss_aggregated, metrics_aggregated = super().aggregate_evaluate(server_round, results, failures)
+
+
+        # client_metrics = {f"Client_{m['client_id'] + 1}": {"accuracy": m["accuracy"], "f1_score": m["f1_score"], "loss": m["loss"]} for _, m in metrics_aggregated["metrics"]}
+        # self.writer.add_scalars(f"Clients_Accuracy_Test", {k: v["accuracy"] for k, v in client_metrics.items()}, server_round)
+        # self.writer.add_scalars(f"Clients_F1_Score_Test", {k: v["f1_score"] for k, v in client_metrics.items()}, server_round)
+        # self.writer.add_scalars(f"Clients_Loss_Test", {k: v["loss"] for k, v in client_metrics.items()}, server_round)
+
+        metrics = metrics_aggregated["metrics"]
+        for _, m in metrics:
+            client_id = m["client_id"]
+            self.writer.add_scalar(f"Clients_Accuracy_Test/Client_{client_id + 1}", m["accuracy"], server_round)
+            self.writer.add_scalar(f"Clients_F1_Score_Test/Client_{client_id + 1}", m["f1_score"], server_round)
+            self.writer.add_scalar(f"Clients_Loss_Test/Client_{client_id + 1}", m["loss"], server_round)
+        
+        return loss_aggregated, metrics_aggregated
 
     def evaluate(self, server_round: int, parameters: Parameters):
         loss, metrics = super().evaluate(server_round, parameters)
         print(f"Round {server_round} - Evaluation: {metrics}")
-        self.writer.add_scalar("test_accuracy", metrics["accuracy"], server_round)
-        self.writer.add_scalar("test_loss", loss, server_round)
-        self.writer.add_scalar("test_f1_score", metrics["f1_score"], server_round)
+        self.writer.add_scalar("Server_Test_Accuracy", metrics["accuracy"], server_round)
+        self.writer.add_scalar("Server_Test_Precision", metrics["precision"], server_round)
+        self.writer.add_scalar("Server_Test_Recall", metrics["recall"], server_round)
+        self.writer.add_scalar("Server_Test_F1_Score", metrics["f1_score"], server_round)
+        self.writer.add_scalar("Server_Test_Loss", loss, server_round)
+
 
     def custom_on_fit_config_fn(self, server_round: int) ->dict[str, Scalar]:
         """Return a configuration for the next round of training."""

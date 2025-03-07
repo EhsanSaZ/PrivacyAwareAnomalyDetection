@@ -75,16 +75,20 @@ class FlowerClient(NumPyClient):
         # self.set_parameters(self.net, parameters)
         self.set_parameters(parameters)
         _, train_loss = train(self.net, self.trainloader, epochs=args.epoch_iterations, device=args.device, verbose=False ,local_lr=config['lr'])
-        loss, accuracy, f1_score = test(self.net, self.trainloader, device=args.device) 
+        loss, results = test(self.net, self.trainloader, device=args.device, complete_results=False) 
+        f1_score = results["f1_score"]
+        accuracy = results["accuracy"]
         # return self.get_parameters(self.net), len(self.trainloader), {"loss": loss, "accuracy":  float(accuracy), "f1_score": f1_score, "train_local_loss": train_loss}
-        return self.get_parameters(config), len(self.trainloader), {"loss": loss, "accuracy":  float(accuracy), "f1_score": f1_score, "train_local_loss": train_loss}
+        return self.get_parameters(config), len(self.trainloader), {"loss": loss, "accuracy":  float(accuracy), "f1_score": f1_score, "train_local_loss": train_loss, "client_id": self.p_id}
 
 
     def evaluate(self, parameters, config):
         # self.set_parameters(self.net, parameters)
         self.set_parameters(parameters)
-        loss, accuracy, f1_score = test(self.net, self.valloader, args.device)
-        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score)}
+        loss, results = test(self.net, self.valloader, args.device, complete_results=False)
+        f1_score = results["f1_score"]
+        accuracy = results["accuracy"]
+        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score), "client_id": self.p_id}
         # return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score)}
     
 def create_client(args, data_loaders) -> ClientApp:
