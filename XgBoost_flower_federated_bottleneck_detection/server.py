@@ -109,7 +109,7 @@ def get_server_app(args, num_rounds=5):
         # Optionally set initial global model (here, empty)
         parameters = Parameters(tensor_type="", tensors=[])
         loader = SingletonDataLoader.get_instance()
-        _, _, global_test_loader, _, total_classes, filenames = loader.get_data_loaders(remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed)
+        _, _, global_test_loader, total_classes, filenames = loader.get_data_loaders(remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed)
 
         # Define strategy
         strategy = FedXgbBaggingCustom(

@@ -49,14 +49,14 @@ meta_args.filenames = {
     "utah_ssd_delay_10ms_merged":"./ds/v3/selected_cols_merged/utah-6525-25-ssd-delayed-10ms_merged_V3.csv",
     }
 
-# meta_args.TR_enabled = False
-# meta_args.save_dir = "data_loaders"
-# meta_args.log_path = "results/XGBoost_FedXgbBaggin_WTR"
+meta_args.TR_enabled = False
+meta_args.save_dir = "data_loaders"
+meta_args.log_path = "results/XGBoost_FedXgbBaggin_WTR"
 
 
-meta_args.TR_enabled = True
-meta_args.save_dir = "data_loaders_TR_2"
-meta_args.log_path = "results/XGBoost_FedXgbBaggin_TR"
+# meta_args.TR_enabled = True
+# meta_args.save_dir = "data_loaders_TR_2"
+# meta_args.log_path = "results/XGBoost_FedXgbBaggin_TR"
 
 meta_args.local_epochs = 1
 meta_args.params = {

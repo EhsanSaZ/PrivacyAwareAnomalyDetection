@@ -12,19 +12,21 @@ from server import get_server_app
 
 
 if __name__ == "__main__":
-    args.repeat = 3
+    args.repeat = 1
     for r in range(args.repeat):
-        args.seed = args.seed + r + 42
+        # args.seed = args.seed + r + 42
+        args.seed = args.seed + r + 42 
         set_global_seed(args.seed)
 
         loader = SingletonDataLoader.get_instance()
-        clients_data_loaders, client_test_loaders, _, total_classes, filenames = loader.get_data_loaders(remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed)
+        clients_data_loaders, client_test_loaders, _ , total_classes, filenames = loader.get_data_loaders(remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed)
         # print(clients_data_loaders, "\n")
         # print(client_test_loaders, "\n")
         # summarize_dataset(client_test_loaders["wisconsin_ssd_merged"])
         summarize_dataset(client_test_loaders["wisconsin_hdd_merged"])
 
-        server_app = get_server_app()
+        # server_app = get_server_app(args, num_rounds=args.round)
+        server_app = get_server_app(args, num_rounds=10)
         client_app = get_client_app(args)
         run_simulation(
             server_app=server_app,
