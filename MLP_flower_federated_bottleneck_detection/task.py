@@ -80,8 +80,9 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
     if os.path.exists(dataset_file):
         print("Loading saved dataset...")
         dataset = np.load(dataset_file, allow_pickle=True)
-        clients_data_loaders = {}
-        client_test_loaders = {}
+        clients_data_loaders, client_test_loaders = {}, {}
+        combined_X_train, combined_y_train = [], []
+
         for client in dataset['train'].item():
             train_data = dataset['train'].item()[client]['data']
             train_label = dataset['train'].item()[client]['label']
@@ -97,7 +98,16 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
                 torch.tensor(test_label, dtype=torch.long)
             )
             clients_data_loaders[client] = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True) 
-            client_test_loaders[client] = DataLoader(test_dataset, batch_size=args.batch_size)  
+            client_test_loaders[client] = DataLoader(test_dataset, batch_size=args.batch_size)
+            combined_X_train.append(train_data)
+            combined_y_train.append(train_label)
+
+        combined_X_train = np.vstack(combined_X_train)
+        combined_y_train = np.hstack(combined_y_train)
+        global_train_loader = DataLoader(TensorDataset(torch.tensor(combined_X_train, dtype=torch.float32),
+                                                    torch.tensor(combined_y_train, dtype=torch.long))
+                                        , batch_size=args.batch_size, shuffle=True)
+
         combined_X_test = np.vstack([dataset['test'].item()[client]['data'] for client in dataset['test'].item()])
         combined_y_test = np.hstack([dataset['test'].item()[client]['label'] for client in dataset['test'].item()])
         global_test_loader = DataLoader(TensorDataset(torch.tensor(combined_X_test, dtype=torch.float32),
@@ -106,7 +116,7 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
         total_classes = len(np.unique(combined_y_test))
         args.input_size = len(features)
         args.output_size = total_classes
-        return clients_data_loaders, client_test_loaders, global_test_loader, total_classes, args
+        return clients_data_loaders, client_test_loaders, global_test_loader, global_train_loader, total_classes, args
     
     print("Saved dataset not found. Processing and creating dataset...")
     clients_data, test_data = {}, {}
