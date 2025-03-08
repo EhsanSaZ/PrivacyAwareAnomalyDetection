@@ -91,7 +91,7 @@ meta_args.epoch_iterations = 20
 # meta_args.data_type = ""
 # meta_args.epoch_iterations = 20
 
-# TR Settings  ****
+# *************************************************************** TR Settings  *******************************************************************
 # meta_args.TR_enabled = True 
 # meta_args.save_dir = "data_loaders_TR"
 # meta_args.log_path = "results/MLP_fed_avg_TR"
