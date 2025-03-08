@@ -10,6 +10,48 @@ from imblearn.over_sampling import RandomOverSampler
 
 from experiment_config import args
 
+
+def normalize_df(df):
+    df['sender_avg_rtt_value'] = df['sender_avg_rtt_value'] / df[df.label_value == 0].sender_avg_rtt_value.mean()
+    df['sender_retrans'] = df['sender_retrans'] / df[df.label_value == 0].sender_seg_out.mean()
+    # df["sender_avg_send_value"] = df["sender_avg_send_value"] / df[df.label_value == 0].sender_avg_send_value.mean()
+    df["sender_segs_in"] = df["sender_segs_in"] / df[df.label_value == 0].sender_segs_in.mean()
+
+    # df["sender_ost_read"] = df["sender_ost_read"] / df[df.label_value == 0].sender_ost_read.mean()
+
+    df["sender_nic_send_bytes"] = df["sender_nic_send_bytes"] / df[df.label_value == 0].sender_nic_send_bytes.mean()
+    df["sender_nic_receive_bytes"] = df["sender_nic_receive_bytes"] / df[df.label_value == 0].sender_nic_receive_bytes.mean()
+
+    df["sender_remote_ost_read_bytes"] =df["sender_remote_ost_read_bytes"] / df[df.label_value == 0].sender_remote_ost_read_bytes.mean()
+
+    # df["receiver_segs_in"] = df["receiver_segs_in"] / df[df.label_value == 0].receiver_segs_in.mean()
+    df["receiver_seg_out"] = df["receiver_seg_out"] / df[df.label_value == 0].receiver_seg_out.mean()
+
+    # df["receiver_write_bytes"] = df["receiver_write_bytes"] / df[df.label_value == 0].receiver_write_bytes.mean()
+    # df["receiver_ost_write"] = df["receiver_ost_write"] / df[df.label_value == 0].receiver_ost_write.mean()
+
+    df["receiver_nic_send_bytes"] = df["receiver_nic_send_bytes"] / df[df.label_value == 0].receiver_nic_send_bytes.mean()
+    df["receiver_nic_receive_bytes"] = df["receiver_nic_receive_bytes"] / df[df.label_value == 0].receiver_nic_receive_bytes.mean()
+
+    df["receiver_remote_ost_write_bytes"] = df["receiver_remote_ost_write_bytes"] / df[df.label_value == 0].receiver_remote_ost_write_bytes.mean()
+
+    df["sender_tcp_snd_buffer_max"] = df["sender_tcp_snd_buffer_max"] / df[df.label_value == 0].sender_tcp_snd_buffer_max.mean()
+    df["receiver_tcp_rcv_buffer_max"] = df["receiver_tcp_rcv_buffer_max"] / df[df.label_value == 0].receiver_tcp_rcv_buffer_max.mean()
+
+    # df["sender_write_bytes_io"] = df["sender_write_bytes_io"] / df[df.label_value == 0].sender_write_bytes_io.mean()
+    # df["sender_read_bytes_io"] = df["sender_read_bytes_io"] / df[df.label_value == 0].sender_read_bytes_io.mean()
+    #
+    # df["receiver_read_bytes_io"] = df["receiver_read_bytes_io"] / df[df.label_value == 0].receiver_read_bytes_io.mean()
+    # df["receiver_write_bytes_io"] = df["receiver_write_bytes_io"] / df[df.label_value == 0].receiver_write_bytes_io.mean()
+
+    #---------------
+    # df["sender_ssthresh_value"] = df.sender_ssthresh_value / df.sender_cwnd_rate
+    # df["sender_req_active"] = df["sender_req_active"] / df[df.label_value == 0].sender_req_active.mean()
+    df["sender_cwnd_rate"] = df["sender_cwnd_rate"] / df[df.label_value == 0].sender_cwnd_rate.mean()
+    return df
+
+
+
 class SingletonDataLoader:
     _instance = None
 
@@ -26,13 +68,13 @@ class SingletonDataLoader:
             SingletonDataLoader._instance = SingletonDataLoader()
         return SingletonDataLoader._instance
 
-    def get_data_loaders(self, remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed):
+    def get_data_loaders(self, remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed, save_dir=args.save_dir):
         if self.data_loaders is None:
-            self.data_loaders = self._create_data_loaders(remove_labels, features, filenames, seed)
+            self.data_loaders = self._create_data_loaders(remove_labels, features, filenames, seed, save_dir)
             
         return self.data_loaders
 
-    def _create_data_loaders(self, remove_labels, features, filenames, seed, save_dir="data_loaders"):
+    def _create_data_loaders(self, remove_labels, features, filenames, seed, save_dir):
         
         print("=" * 25 + " CREATING DATA LOADERS " + "=" * 25)
         
@@ -64,13 +106,17 @@ class SingletonDataLoader:
             }
 
             # Recreate combined test data from client_test_loaders
+            conbined_X_train = np.vstack([dataset['train'].item()[client]['data'] for client in dataset['train'].item()])
+            combined_y_train = np.hstack([dataset['train'].item()[client]['label'] for client in dataset['train'].item()])
+            global_train_loader = xgb.DMatrix(combined_X_train, label=combined_y_train)
+
             combined_X_test = np.vstack([dataset['test'].item()[client]['data'] for client in dataset['test'].item()])
             combined_y_test = np.hstack([dataset['test'].item()[client]['label'] for client in dataset['test'].item()])
             global_test_loader = xgb.DMatrix(combined_X_test, label=combined_y_test)
 
             total_classes = len(np.unique(combined_y_test))
 
-            return clients_data_loaders, client_test_loaders, global_test_loader, total_classes, list(filenames.keys())
+            return clients_data_loaders, client_test_loaders, global_test_loader, global_train_loader, total_classes, list(filenames.keys())
 
         print("Saved dataset not found. Processing and creating dataset...")
         
@@ -84,11 +130,17 @@ class SingletonDataLoader:
             for lbl in remove_labels:
                 df = df.drop(df[df.label_value == lbl].index)
 
+            if args.TR_enabled:
+                df = normalize_df(df)
+
             X = df[features]
             y = df.label_value
 
             encoder = LabelEncoder()
+            scaler = StandardScaler()
+
             y = encoder.fit_transform(y)
+            # X = scaler.fit_transform(X)
 
             X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
 
@@ -119,9 +171,12 @@ class SingletonDataLoader:
         )
 
         # Recreate combined test data
+        combined_X_train = np.vstack([clients_data_loaders[client]['data'] for client in clients_data_loaders])
+        combined_y_train = np.hstack([clients_data_loaders[client]['label'] for client in clients_data_loaders])
         combined_X_test = np.vstack([client_test_loaders[client]['data'] for client in client_test_loaders])
         combined_y_test = np.hstack([client_test_loaders[client]['label'] for client in client_test_loaders])
 
+        global_train_loader = xgb.DMatrix(combined_X_train, label=combined_y_train)
         global_test_loader = xgb.DMatrix(combined_X_test, label=combined_y_test)
 
         total_classes = len(np.unique(combined_y_test))
@@ -137,7 +192,7 @@ class SingletonDataLoader:
             for client in client_test_loaders
         }
 
-        return clients_data_loaders, client_test_loaders, global_test_loader, total_classes, list(clients_data_loaders.keys())
+        return clients_data_loaders, client_test_loaders, global_test_loader, global_train_loader, total_classes, list(clients_data_loaders.keys())
 
 
 def set_log_path(args):
