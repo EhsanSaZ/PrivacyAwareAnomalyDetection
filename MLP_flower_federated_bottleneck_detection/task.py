@@ -130,8 +130,8 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
             df = df.drop(df[df.label_value == lbl].index)
         
         # Normalize for transfer learning 
-        # if args.TR_enabled:
-            # df = normalize_df(df)
+        if args.TR_enabled:
+            df = normalize_df(df)
 
         X = df.drop(columns="label_value")[features]
         y = df.label_value
