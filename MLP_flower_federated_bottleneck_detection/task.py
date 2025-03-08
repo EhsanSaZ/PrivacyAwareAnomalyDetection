@@ -175,7 +175,7 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
     )
 
     # Recreate combined test data
-    combined_X_test = np.vstack([test_data[client]['data'] for client in clients_data])
+    combined_X_test = np.vstack([test_data[client]['data'] for client in test_data])
     combined_y_test = np.hstack([test_data[client]['label'] for client in test_data])
 
     clients_data_loaders = {}
