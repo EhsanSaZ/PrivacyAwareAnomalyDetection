@@ -175,6 +175,9 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
     )
 
     # Recreate combined test data
+    combined_X_train = np.vstack([clients_data[client]['data'] for client in clients_data])
+    combined_y_train = np.hstack([clients_data[client]['label'] for client in clients_data])
+
     combined_X_test = np.vstack([test_data[client]['data'] for client in test_data])
     combined_y_test = np.hstack([test_data[client]['label'] for client in test_data])
 
@@ -198,6 +201,10 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
 
     total_classes = len(np.unique(combined_y_test))
      # Create combined test DataLoader
+    global_train_loader = DataLoader(TensorDataset(torch.tensor(combined_X_train, dtype=torch.float32),
+                                        torch.tensor(combined_y_train, dtype=torch.long))
+                                    , batch_size=args.batch_size, shuffle=True)
+    
     global_test_loader = DataLoader(TensorDataset(torch.tensor(combined_X_test, dtype=torch.float32),
                                                    torch.tensor(combined_y_test, dtype=torch.long))
                                     , batch_size=args.batch_size, shuffle=False)
@@ -205,7 +212,7 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
     args.input_size = len(features)
     args.output_size = total_classes
 
-    return clients_data_loaders, client_test_loaders, global_test_loader, total_classes, args 
+    return clients_data_loaders, client_test_loaders, global_test_loader, global_train_loader, total_classes, args 
 
 
 def set_log_path(args):
