@@ -106,9 +106,9 @@ class SingletonDataLoader:
             }
 
             # Recreate combined test data from client_test_loaders
-            combined_X_train = np.vstack([dataset['train'].item()[client]['data'] for client in dataset['train'].item()])
-            combined_y_train = np.hstack([dataset['train'].item()[client]['label'] for client in dataset['train'].item()])
-            global_train_loader = xgb.DMatrix(combined_X_train, label=combined_y_train)
+            # combined_X_train = np.vstack([dataset['train'].item()[client]['data'] for client in dataset['train'].item()])
+            # combined_y_train = np.hstack([dataset['train'].item()[client]['label'] for client in dataset['train'].item()])
+            # global_train_loader = xgb.DMatrix(combined_X_train, label=combined_y_train)
 
             combined_X_test = np.vstack([dataset['test'].item()[client]['data'] for client in dataset['test'].item()])
             combined_y_test = np.hstack([dataset['test'].item()[client]['label'] for client in dataset['test'].item()])
@@ -116,7 +116,7 @@ class SingletonDataLoader:
 
             total_classes = len(np.unique(combined_y_test))
 
-            return clients_data_loaders, client_test_loaders, global_test_loader, global_train_loader, total_classes, list(filenames.keys())
+            return clients_data_loaders, client_test_loaders, global_test_loader, total_classes, list(filenames.keys())
 
         print("Saved dataset not found. Processing and creating dataset...")
         
@@ -171,12 +171,12 @@ class SingletonDataLoader:
         )
 
         # Recreate combined test data
-        combined_X_train = np.vstack([clients_data_loaders[client]['data'] for client in clients_data_loaders])
-        combined_y_train = np.hstack([clients_data_loaders[client]['label'] for client in clients_data_loaders])
+        # combined_X_train = np.vstack([clients_data_loaders[client]['data'] for client in clients_data_loaders])
+        # combined_y_train = np.hstack([clients_data_loaders[client]['label'] for client in clients_data_loaders])
         combined_X_test = np.vstack([client_test_loaders[client]['data'] for client in client_test_loaders])
         combined_y_test = np.hstack([client_test_loaders[client]['label'] for client in client_test_loaders])
 
-        global_train_loader = xgb.DMatrix(combined_X_train, label=combined_y_train)
+        # global_train_loader = xgb.DMatrix(combined_X_train, label=combined_y_train)
         global_test_loader = xgb.DMatrix(combined_X_test, label=combined_y_test)
 
         total_classes = len(np.unique(combined_y_test))
@@ -192,7 +192,7 @@ class SingletonDataLoader:
             for client in client_test_loaders
         }
 
-        return clients_data_loaders, client_test_loaders, global_test_loader, global_train_loader, total_classes, list(clients_data_loaders.keys())
+        return clients_data_loaders, client_test_loaders, global_test_loader, total_classes, list(clients_data_loaders.keys())
 
 
 def set_log_path(args):
