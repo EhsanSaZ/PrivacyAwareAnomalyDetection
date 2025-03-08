@@ -102,7 +102,7 @@ def get_client_app(args):
         # print(client_run_config)
 
         loader = SingletonDataLoader.get_instance()
-        clients_data_loaders, client_test_loaders, _, total_classes, filenames = loader.get_data_loaders(remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed)
+        clients_data_loaders, client_test_loaders, _, _, total_classes, filenames = loader.get_data_loaders(remove_labels=args.remove_labels,  features=args.features, filenames=args.filenames, seed=args.seed)
 
         partition_id = context.node_config["partition-id"]
                 
