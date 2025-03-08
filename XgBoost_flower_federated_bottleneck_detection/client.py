@@ -4,7 +4,7 @@ from flwr.common import FitIns, FitRes, EvaluateIns, EvaluateRes, Parameters, St
 from flwr.common.config import unflatten_dict
 from task import replace_keys, load_datasets, SingletonDataLoader
 
-from sklearn.metrics import f1_score, accuracy_score
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 
 class FlowerClient(Client):
     def __init__(self, train_dmatrix, valid_dmatrix, num_local_rounds, params):
@@ -48,6 +48,7 @@ class FlowerClient(Client):
 
         # Save model
         local_model = bst.save_raw("json")
+        # print(local_model)
         local_model_bytes = bytes(local_model)
 
         return FitRes(
@@ -67,13 +68,15 @@ class FlowerClient(Client):
         labels = self.valid_dmatrix.get_label()
         accuracy = accuracy_score(labels, preds)
         f1 = f1_score(labels, preds, average="weighted")
+        precision = precision_score(labels, preds, average="weighted", zero_division=0)
+        recall = recall_score(labels, preds, average="weighted", zero_division=0)
 
         # Run evaluation at the final iteration
         eval_result = bst.eval_set(
             evals=[(self.valid_dmatrix, "valid")],
             iteration=bst.num_boosted_rounds() - 1,
         )
-        print(eval_result)
+        # print(eval_result)
         # eval_result might look like: "[round]\tvalid-mlogloss:0.xxx"
         # parse out the mlogloss
         items = eval_result.split("\t")
@@ -88,7 +91,7 @@ class FlowerClient(Client):
             status=Status(code=Code.OK, message="OK"),
             loss=mlogloss_value,
             num_examples=self.valid_dmatrix.num_row(),
-            metrics={"accuracy": accuracy, "f1_score": f1, "mlogloss": mlogloss_value},
+            metrics={"accuracy": accuracy, "f1_score": f1, "mlogloss": mlogloss_value, "precision": precision, "recall": recall},
         )
 
 def get_client_app(args):
