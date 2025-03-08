@@ -106,7 +106,7 @@ class SingletonDataLoader:
             }
 
             # Recreate combined test data from client_test_loaders
-            conbined_X_train = np.vstack([dataset['train'].item()[client]['data'] for client in dataset['train'].item()])
+            combined_X_train = np.vstack([dataset['train'].item()[client]['data'] for client in dataset['train'].item()])
             combined_y_train = np.hstack([dataset['train'].item()[client]['label'] for client in dataset['train'].item()])
             global_train_loader = xgb.DMatrix(combined_X_train, label=combined_y_train)
 
