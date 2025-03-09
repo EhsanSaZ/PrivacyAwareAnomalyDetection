@@ -12,7 +12,7 @@ from client import create_client
 from server import create_server
 
 if __name__ == "__main__":
-    args.repeat = 3
+    args.repeat = 1
     for r in range(args.repeat):
         # r = r + 1
         args.seed = args.seed + r + 42
@@ -25,8 +25,8 @@ if __name__ == "__main__":
         
         client = create_client(args=args, data_loaders=(clients_data_loaders, client_test_loaders))
         # server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=args.round)
-        # server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=2) 
-        server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=100) 
+        server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=2) 
+        # server = create_server(global_test_loader=global_test_loader, args=args, num_rounds=100) 
 
         run_simulation(
             server_app=server,

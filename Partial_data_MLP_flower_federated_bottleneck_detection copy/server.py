@@ -3,7 +3,7 @@ from typing import List, Tuple, Optional, Union
 import json, copy
 
 # import matplotlib.pyplot as plt
-# import numpy as np
+import numpy as np
 import torch
 # import torch.nn as nn
 # import torch.optim as optim
@@ -72,7 +72,6 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     f1_scores = [num_examples * m["f1_score"] for num_examples, m in metrics]
     # losses = [num_examples * m["loss"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
-
     # Aggregate and return custom metric (weighted average)
     return {"accuracy": sum(accuracies) / sum(examples), "f1_score": sum(f1_scores) / sum(examples), "metrics": metrics}
 
@@ -97,7 +96,6 @@ class FedAvgCustom(FedAvg):
         self.min_local_lr = meta_args.min_local_lr
         self.decay_weight = meta_args.decay_weight
         self.on_fit_config_fn = self.custom_on_fit_config_fn
-        # Run simulation
         print("{:<50}".format("-" * 15 + " log path " + "-" * 50)[0:60])
         log_path = set_log_path(meta_args)
         print(log_path)
@@ -124,8 +122,6 @@ class FedAvgCustom(FedAvg):
     
     def aggregate_evaluate(self, server_round: int, results: list[tuple[ClientProxy, EvaluateRes]], failures: list[Union[tuple[ClientProxy, EvaluateRes], BaseException]], ) -> tuple[Optional[float], dict[str, Scalar]]:
         loss_aggregated, metrics_aggregated = super().aggregate_evaluate(server_round, results, failures)
-
-
         # client_metrics = {f"Client_{m['client_id'] + 1}": {"accuracy": m["accuracy"], "f1_score": m["f1_score"], "loss": m["loss"]} for _, m in metrics_aggregated["metrics"]}
         # self.writer.add_scalars(f"Clients_Accuracy_Test", {k: v["accuracy"] for k, v in client_metrics.items()}, server_round)
         # self.writer.add_scalars(f"Clients_F1_Score_Test", {k: v["f1_score"] for k, v in client_metrics.items()}, server_round)
@@ -134,10 +130,10 @@ class FedAvgCustom(FedAvg):
         metrics = metrics_aggregated["metrics"]
         for _, m in metrics:
             client_id = m["client_id"]
-            self.writer.add_scalar(f"Clients_Accuracy_Test/Client_{client_id + 1}", m["accuracy"], server_round)
-            self.writer.add_scalar(f"Clients_F1_Score_Test/Client_{client_id + 1}", m["f1_score"], server_round)
-            self.writer.add_scalar(f"Clients_Loss_Test/Client_{client_id + 1}", m["loss"], server_round)
-        
+            client_name = list(args.filenames.keys())[int(client_id)]
+            self.writer.add_scalar(f"Clients_Accuracy_Test/Client_{client_id + 1} [{client_name}]", m["accuracy"], server_round)
+            self.writer.add_scalar(f"Clients_F1_Score_Test/Client_{client_id + 1} [{client_name}]", m["f1_score"], server_round)
+            self.writer.add_scalar(f"Clients_Loss_Test/Client_{client_id + 1} [{client_name}]", m["loss"], server_round)
         return loss_aggregated, metrics_aggregated
 
     def evaluate(self, server_round: int, parameters: Parameters):

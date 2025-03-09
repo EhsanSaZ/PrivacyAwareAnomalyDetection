@@ -24,7 +24,8 @@ meta_args.device = torch.device('cuda:{}'.format(meta_args.gpu) if torch.cuda.is
 
 meta_args.TR_enabled = False
 meta_args.save_dir = "data_loaders"
-meta_args.log_path = "results/MLP_fed_avg_WTR"
+meta_args.save_dir = "data_loaders_remove_labels_from_train"
+meta_args.log_path = "results/partial_data/MLP_fed_avg_WTR"
 
 meta_args.model = "mlp"
 
@@ -129,6 +130,10 @@ meta_args.filenames = {
 
 meta_args.input_size = len(meta_args.features)
 meta_args.output_size = 9
+
+meta_args.client_remove_labels = {
+    "wisconsin_ssd_merged": [37]
+}
 args = meta_args
 
 

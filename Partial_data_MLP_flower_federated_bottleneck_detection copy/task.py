@@ -86,6 +86,14 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
         for client in dataset['train'].item():
             train_data = dataset['train'].item()[client]['data']
             train_label = dataset['train'].item()[client]['label']
+
+            # TODO remove a classes from a client
+            label_mapping = dataset['label_mappings'].item()[client]
+            labels_to_remove = args.client_remove_labels.get(client, [])
+            encoded_labels_to_remove = [label_mapping[label] for label in labels_to_remove if label in label_mapping]
+            mask = ~np.isin(train_label, encoded_labels_to_remove)
+            train_data, train_label = train_data[mask], train_label[mask]
+
             test_data = dataset['test'].item()[client]['data']
             test_label = dataset['test'].item()[client]['label']
 
@@ -119,7 +127,7 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
         return clients_data_loaders, client_test_loaders, global_test_loader, global_train_loader, total_classes, args
     
     print("Saved dataset not found. Processing and creating dataset...")
-    clients_data, test_data = {}, {}
+    clients_data, test_data, label_mappings = {}, {}, {}
     combined_X_test, combined_y_test = [], []
     for client_name, file_path in filenames.items():
         # Step 1: Load the dataset and Label encoding and scaling
@@ -154,10 +162,17 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
         X_train, y_train = RandomOverSampler(sampling_strategy="all").fit_resample(X_train, y_train)
 
         X_train = X_train.to_numpy() if not isinstance(X_train, np.ndarray) else X_train
-        X_test = X_test.to_numpy() if not isinstance(X_test, np.ndarray) else X_test
         y_train = y_train.to_numpy() if not isinstance(y_train, np.ndarray) else y_train
+        X_test = X_test.to_numpy() if not isinstance(X_test, np.ndarray) else X_test
         y_test = y_test.to_numpy() if not isinstance(y_test, np.ndarray) else y_test
 
+        # Remove chosen classes from clients
+        label_mapping = {label: idx for idx, label in enumerate(encoder.classes_)}
+        labels_to_remove = args.client_remove_labels.get(client_name, [])
+        encoded_labels_to_remove = [label_mapping[label] for label in labels_to_remove if label in label_mapping]
+        mask = ~np.isin(y_train, encoded_labels_to_remove)
+        X_train, y_train = X_train[mask], y_train[mask]
+        
         clients_data[client_name] = {
                 'data': X_train,
                 'label': y_train
@@ -166,12 +181,14 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
                 'data': X_test,
                 'label': y_test
         }
+        label_mappings[client_name] = label_mapping
     # Save dataset
     print("Saving dataset...")
     np.savez_compressed(
         dataset_file,
         train=clients_data,
-        test=test_data
+        test=test_data,
+        label_mappings=label_mappings,
     )
 
     # Recreate combined test data
@@ -302,7 +319,7 @@ def train(net, ldr_train, epochs: int, device, verbose=False, local_lr=0.001):
     return w_new, sum(epochs_losses) / len(epochs_losses)
 
 
-def test(net, ldr_test, device, complete_results=False):
+def test(net, ldr_test, device, complete_results=False, confusion=False):
     
     net = copy.deepcopy(net).to(device)
     loss_func = nn.CrossEntropyLoss()
@@ -338,8 +355,10 @@ def test(net, ldr_test, device, complete_results=False):
             "precision": precision,
             "recall": recall,
             # "report": report,
-            # "confusion_matrix": confusion
         })
-       
+    if confusion:
+        results.update({
+            "confusion_matrix": confusion_matrix(all_targets, all_preds)
+        })   
     
     return test_loss, results

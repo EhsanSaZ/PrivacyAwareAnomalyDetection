@@ -44,13 +44,14 @@ def get_parameters(net) -> List[np.ndarray]:
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
 
 class FlowerClient(NumPyClient):
-    def __init__(self, net, trainloader, valloader, partition_id, args):
+    def __init__(self, net, trainloader, valloader, partition_id, client_name, args):
         self.p_id = partition_id
+        self.client_name = client_name
         self.net = net
         self.trainloader = trainloader
         self.valloader = valloader
         self.args = args
-        
+        self.is_partial_data = bool(args.client_remove_labels.get(client_name, []))
 
     # def get_parameters(self, config):
     #     return get_parameters(self.net)
@@ -85,10 +86,15 @@ class FlowerClient(NumPyClient):
     def evaluate(self, parameters, config):
         # self.set_parameters(self.net, parameters)
         self.set_parameters(parameters)
-        loss, results = test(self.net, self.valloader, args.device, complete_results=False)
+        loss, results = test(self.net, self.valloader, args.device, complete_results=True)
         f1_score = results["f1_score"]
         accuracy = results["accuracy"]
-        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score), "client_id": self.p_id}
+        precision = results["precision"]
+        recall = results["recall"]
+
+        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score), 
+                                                  "precision": float(precision), "recall": float(recall),
+                                                  "client_id": self.p_id, "is_partial_data": self.is_partial_data}
         # return float(loss), len(self.valloader), {"accuracy": float(accuracy), "loss": float(loss), "f1_score": float(f1_score)}
     
 def create_client(args, data_loaders) -> ClientApp:
@@ -103,12 +109,13 @@ def create_client(args, data_loaders) -> ClientApp:
         # will train and evaluate on their own unique data partition
         # Read the node_config to fetch data partition associated to this node
         partition_id = context.node_config["partition-id"]
+        client_name = list(args.filenames.keys())[int(partition_id)]
         trainloader, valloader, _ = load_datasets(partition_id=partition_id, data_loaders=data_loaders, args=args)
 
         # Create a single Flower client representing a single organization
         # FlowerClient is a subclass of NumPyClient, so we need to call .to_client()
         # to convert it to a subclass of `flwr.client.Client`
-        return FlowerClient(net, trainloader, valloader, partition_id, args).to_client()
+        return FlowerClient(net, trainloader, valloader, partition_id, client_name, args).to_client()
 
     # Create the ClientApp
     client = ClientApp(client_fn=client_fn)
