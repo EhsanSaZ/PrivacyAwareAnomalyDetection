@@ -87,8 +87,9 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
             train_data = dataset['train'].item()[client]['data']
             train_label = dataset['train'].item()[client]['label']
 
-            # TODO remove a classes from a client
+            # T ODO remove a classes from a client
             label_mapping = dataset['label_mappings'].item()[client]
+            # label_mapping = {0: 0, 1: 1, 4: 2, 7: 3, 10: 4, 13: 5, 33: 6, 37: 7, 43: 8}
             labels_to_remove = args.client_remove_labels.get(client, [])
             encoded_labels_to_remove = [label_mapping[label] for label in labels_to_remove if label in label_mapping]
             mask = ~np.isin(train_label, encoded_labels_to_remove)
@@ -160,6 +161,8 @@ def process_and_prepare_loaders(args, remove_labels=None, features=None, filenam
         # Step 4: Apply oversampling to training data
         # X_train, y_train = RandomOverSampler(sampling_strategy="all", random_state=args.seed).fit_resample(X_train, y_train)
         X_train, y_train = RandomOverSampler(sampling_strategy="all").fit_resample(X_train, y_train)
+        # ADDED LATER
+        X_test, y_test = RandomOverSampler(sampling_strategy="all").fit_resample(X_test, y_test)
 
         X_train = X_train.to_numpy() if not isinstance(X_train, np.ndarray) else X_train
         y_train = y_train.to_numpy() if not isinstance(y_train, np.ndarray) else y_train
