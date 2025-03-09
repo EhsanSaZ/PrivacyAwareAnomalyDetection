@@ -35,7 +35,7 @@ from task import test, set_log_path
 from collections import Counter
 
 
-def get_evaluate_fn(testloader):
+def get_evaluate_fn(testloader, client_test_loaders):
     """Return a function that can be called to do global evaluation."""
 
     def evaluate_fn(server_round: int, parameters, config):
@@ -60,6 +60,12 @@ def get_evaluate_fn(testloader):
         loss, metrics = test(model, testloader, args.device, complete_results=True)
         metrics.update({"loss": loss})
         # print(f"Round {server_round} - Evaluation: loss {loss}, accuracy {accuracy}, f1_score {f1_score}")
+
+        clients_conf_matrix = {
+            client_name: test(model, client_test_loaders[client_name], args.device, complete_results=False, confusion=True)[1]["confusion_matrix"]
+            for client_name in args.client_remove_labels.keys()
+        }
+        metrics["clients_conf_matrix"] = clients_conf_matrix
         return loss, metrics
     return evaluate_fn
 
@@ -131,9 +137,11 @@ class FedAvgCustom(FedAvg):
         for _, m in metrics:
             client_id = m["client_id"]
             client_name = list(args.filenames.keys())[int(client_id)]
-            self.writer.add_scalar(f"Clients_Accuracy_Test/Client_{client_id + 1} [{client_name}]", m["accuracy"], server_round)
-            self.writer.add_scalar(f"Clients_F1_Score_Test/Client_{client_id + 1} [{client_name}]", m["f1_score"], server_round)
-            self.writer.add_scalar(f"Clients_Loss_Test/Client_{client_id + 1} [{client_name}]", m["loss"], server_round)
+            self.writer.add_scalar(f"Clients_Accuracy_Test/Client_{client_id + 1}", m["accuracy"], server_round)
+            self.writer.add_scalar(f"Clients_Precision_Test/Client_{client_id + 1}", m["loss"], server_round)
+            self.writer.add_scalar(f"Clients_Recall_Test/Client_{client_id + 1}", m["accuracy"], server_round)
+            self.writer.add_scalar(f"Clients_F1_Score_Test/Client_{client_id + 1}", m["f1_score"], server_round)
+            self.writer.add_scalar(f"Clients_Loss_Test/Client_{client_id + 1}", m["loss"], server_round)
         return loss_aggregated, metrics_aggregated
 
     def evaluate(self, server_round: int, parameters: Parameters):
@@ -145,6 +153,11 @@ class FedAvgCustom(FedAvg):
         self.writer.add_scalar("Server_Test_F1_Score", metrics["f1_score"], server_round)
         self.writer.add_scalar("Server_Test_Loss", loss, server_round)
 
+        clients_conf_matrix = metrics["clients_conf_matrix"]
+        for client_name, conf_matrix in clients_conf_matrix.items():
+            client_id = list(args.filenames.keys()).index(client_name)
+            self.writer.add_text(f"Confusion_Matrix/Client_{client_id + 1} [{client_name}]", np.array2string(conf_matrix), server_round)
+
 
     def custom_on_fit_config_fn(self, server_round: int) ->dict[str, Scalar]:
         """Return a configuration for the next round of training."""
@@ -154,7 +167,7 @@ class FedAvgCustom(FedAvg):
         return {"lr": self.lr}
 
 
-def create_server(global_test_loader, args, num_rounds=2):
+def create_server(global_test_loader, client_test_loaders, args, num_rounds=2):
     """Create and return the server instance."""
     strategy = FedAvgCustom(
         meta_args=args,
@@ -166,7 +179,7 @@ def create_server(global_test_loader, args, num_rounds=2):
         evaluate_metrics_aggregation_fn=weighted_average, # callback defined earlier
         fit_metrics_aggregation_fn=fit_metrics_aggregation_fn,  # callback defined earlier
         evaluate_fn=get_evaluate_fn(
-            global_test_loader, 
+            global_test_loader, client_test_loaders
         ),  # Wait until all 3 clients are available
     )
 

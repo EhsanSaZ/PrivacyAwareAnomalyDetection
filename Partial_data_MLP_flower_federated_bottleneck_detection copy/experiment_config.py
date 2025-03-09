@@ -22,10 +22,10 @@ meta_args = parser.parse_args("")
 # disable_progress_bar()
 meta_args.device = torch.device('cuda:{}'.format(meta_args.gpu) if torch.cuda.is_available() and meta_args.gpu != -1 else 'cpu')
 
-meta_args.TR_enabled = False
-meta_args.save_dir = "data_loaders"
-meta_args.save_dir = "data_loaders_remove_labels_from_train"
-meta_args.log_path = "results/partial_data/MLP_fed_avg_WTR"
+# meta_args.TR_enabled = False
+# meta_args.save_dir = "data_loaders"
+# meta_args.save_dir = "data_loaders_remove_labels_from_train"
+# meta_args.log_path = "results/MLP/partial_data/MLP_fed_avg_WTR"
 
 meta_args.model = "mlp"
 
@@ -93,9 +93,11 @@ meta_args.epoch_iterations = 20
 # meta_args.epoch_iterations = 20
 
 # *************************************************************** TR Settings  *******************************************************************
-# meta_args.TR_enabled = True 
-# meta_args.save_dir = "data_loaders_TR"
-# meta_args.log_path = "results/MLP_fed_avg_TR"
+meta_args.TR_enabled = True
+meta_args.save_dir = "data_loaders_remove_labels_from_train_TR"
+meta_args.log_path = "results/MLP/partial_data/MLP_fed_avg_TR"
+
+
 
 # meta_args.local_lr = 0.001 # with simple adam no betas gets 81% at round 29 and gets ~87% but train lossalso much lower than above case
 # meta_args.min_local_lr = 1e-08
@@ -132,7 +134,7 @@ meta_args.input_size = len(meta_args.features)
 meta_args.output_size = 9
 
 meta_args.client_remove_labels = {
-    "wisconsin_ssd_merged": [37]
+    "wisconsin_ssd_merged": [33]
 }
 args = meta_args
 
