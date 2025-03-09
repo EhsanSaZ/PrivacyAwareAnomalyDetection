@@ -161,7 +161,8 @@ class FedAvgCustom(FedAvg):
 
     def custom_on_fit_config_fn(self, server_round: int) ->dict[str, Scalar]:
         """Return a configuration for the next round of training."""
-        self.lr = self.lr * self.decay_weight if self.decay_weight < 1.0 and self.lr > self.min_local_lr else self.min_local_lr
+        if not args.TR_enabled:
+            self.lr = self.lr * self.decay_weight if self.decay_weight < 1.0 and self.lr > self.min_local_lr else self.min_local_lr
         # self.lr = self.lr * self.decay_weight if self.decay_weight < 1.0  else self.lr
         print(f"Round {server_round} - Learning rate: {self.lr}")
         return {"lr": self.lr}
