@@ -12,7 +12,7 @@ from server import get_server_app
 
 
 if __name__ == "__main__":
-    args.repeat = 1
+    args.repeat = 5
     for r in range(args.repeat):
         # args.seed = args.seed + r + 42
         args.seed = args.seed + r + 42 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         summarize_dataset(client_test_loaders["wisconsin_hdd_merged"])
 
         # server_app = get_server_app(args, num_rounds=args.round)
-        server_app = get_server_app(args, num_rounds=10)
+        server_app = get_server_app(args, num_rounds=50)
         client_app = get_client_app(args)
         run_simulation(
             server_app=server_app,

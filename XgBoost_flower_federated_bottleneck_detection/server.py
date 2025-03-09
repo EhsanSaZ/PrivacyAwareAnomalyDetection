@@ -28,6 +28,7 @@ def evaluate_metrics_aggregation(eval_metrics):
     metrics_aggregated = {"agg_eval_mlogloss": sum(mlogloss_aggregated)/sum(examples), "agg_eval_accuracy": sum(accuracies) / sum(examples),
                            "agg_eval_f1_score": sum(f1_scores) / sum(examples), "agg_eval_precision": sum(precision_scores) / sum(examples), 
                            "agg_eval_recall": sum(recall_scores) / sum(examples)}
+    print(metrics_aggregated)
     return metrics_aggregated
 
 def config_func(rnd: int) -> dict[str, str]:

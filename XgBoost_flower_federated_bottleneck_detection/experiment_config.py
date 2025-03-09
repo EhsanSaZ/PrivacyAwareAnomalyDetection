@@ -27,9 +27,9 @@ meta_args.model = "mlp"
 # meta_args.batch_size = 100
 # meta_args.decay_weight = 1.0
 # meta_args.data_type = ""
-meta_args.round = 5 # 50
-meta_args.epoch_iterations = 10
-meta_args.local_lr = 0.001
+meta_args.round = 50 # 50
+meta_args.epoch_iterations = 50
+meta_args.local_lr = 0.0001
 meta_args.batch_size = 150
 meta_args.decay_weight = 1.0
 meta_args.data_type = ""
@@ -51,12 +51,12 @@ meta_args.filenames = {
 
 meta_args.TR_enabled = False
 meta_args.save_dir = "data_loaders"
-meta_args.log_path = "results/XGBoost_FedXgbBaggin_WTR"
+meta_args.log_path = "results/XGB/XGBoost_FedXgbBaggin_WTR"
 
 
 # meta_args.TR_enabled = True
-# meta_args.save_dir = "data_loaders_TR_2"
-# meta_args.log_path = "results/XGBoost_FedXgbBaggin_TR"
+# meta_args.save_dir = "data_loaders_TR"
+# meta_args.log_path = "results/XGB/XGBoost_FedXgbBaggin_TR"
 
 meta_args.local_epochs = 1
 meta_args.params = {
