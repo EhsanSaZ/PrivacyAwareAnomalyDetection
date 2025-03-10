@@ -138,7 +138,7 @@ class FedAvgCustom(FedAvg):
             client_id = m["client_id"]
             client_name = list(args.filenames.keys())[int(client_id)]
             self.writer.add_scalar(f"Clients_Accuracy_Test/Client_{client_id + 1}", m["accuracy"], server_round)
-            self.writer.add_scalar(f"Clients_Precision_Test/Client_{client_id + 1}", m["loss"], server_round)
+            self.writer.add_scalar(f"Clients_Precision_Test/Client_{client_id + 1}", m["precision"], server_round)
             self.writer.add_scalar(f"Clients_Recall_Test/Client_{client_id + 1}", m["accuracy"], server_round)
             self.writer.add_scalar(f"Clients_F1_Score_Test/Client_{client_id + 1}", m["f1_score"], server_round)
             self.writer.add_scalar(f"Clients_Loss_Test/Client_{client_id + 1}", m["loss"], server_round)
@@ -155,6 +155,7 @@ class FedAvgCustom(FedAvg):
 
         clients_conf_matrix = metrics["clients_conf_matrix"]
         for client_name, conf_matrix in clients_conf_matrix.items():
+            print("write conf matrix for client", client_name)
             client_id = list(args.filenames.keys()).index(client_name)
             self.writer.add_text(f"Confusion_Matrix/Client_{client_id + 1} [{client_name}]", np.array2string(conf_matrix), server_round)
 
